@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Search, User, Menu, X, LogOut, LayoutDashboard, Package } from 'lucide-react'; 
 import toast from 'react-hot-toast';
 
-const API_URL = 'https://phitku-natural-care.onrender.com/api'; // UPDATE THIS WHEN YOU DEPLOY NEW BACKEND
+const API_URL = 'https://phitku-natural-care.onrender.com/api'; // UPDATE THIS WHEN YOU DEPLOY YOUR NEW BACKEND
 
 const BRAND_COLOR = '#2563EB'; // Blue color
 
@@ -51,11 +51,16 @@ const Navbar = ({ cartCount = 0, user, onLogout }) => {
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* Logo */}
-        <Link to="/" className="text-center lg:text-left flex flex-col items-center lg:items-start group">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-wide text-gray-900 leading-none group-hover:text-blue-600 transition">Mobile Gear</h1>
-          <p className="text-[0.6rem] tracking-[0.25em] text-gray-500 uppercase font-light mt-0.5">PREMIUM ACCESSORIES</p>
+        {/* --- LOGO SECTION (UPDATED) --- */}
+        <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
+           {/* Image Only - No Text */}
+           <img 
+             src="/logo192.png" 
+             alt="GearUp Logo" 
+             className="h-10 w-auto md:h-12 object-contain" 
+           />
         </Link>
+        {/* ----------------------------- */}
 
         {/* Desktop Links */}
         <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-700"> 

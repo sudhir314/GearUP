@@ -8,16 +8,22 @@ const User = require('../models/User');
 const SibApiV3Sdk = require('sib-api-v3-sdk');
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
 
-// Debug Check
-if (!process.env.BREVO_API_KEY || !process.env.SENDER_EMAIL) {
-    console.error("❌ CRITICAL ERROR: Missing Email Keys in .env file");
+// Debug Check: Warn if keys are missing (doesn't crash server)
+if (!process.env.BREVO_API_KEY) {
+    console.error("⚠️ WARNING: BREVO_API_KEY is missing in .env file!");
 }
 
 const apiKey = defaultClient.authentications['api-key'];
 apiKey.apiKey = process.env.BREVO_API_KEY;
 
-// --- 2. SEND EMAIL FUNCTION (Mobile Gear) ---
+// --- 2. SEND EMAIL FUNCTION ---
 const sendEmail = async (to, subject, textContent) => {
+  // If keys are missing, don't crash, just log error
+  if (!process.env.BREVO_API_KEY || !process.env.SENDER_EMAIL) {
+      console.error("❌ EMAIL FAILED: Missing .env keys");
+      return; 
+  }
+
   const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
   const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
 
@@ -27,10 +33,10 @@ const sendEmail = async (to, subject, textContent) => {
       <h2 style="color: #2563EB;">Mobile Gear</h2>
       <p style="font-size: 16px;">${textContent}</p>
       <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-      <p style="font-size: 12px; color: #777;">Sent by Mobile Gear Team.</p>
+      <p style="font-size: 12px; color: #777;">Sent securely by Mobile Gear Team.</p>
     </div>`;
   
-  // Uses the verified sender from your .env
+  // USE VERIFIED SENDER FROM .ENV
   sendSmtpEmail.sender = { 
       "name": "Mobile Gear Team", 
       "email": process.env.SENDER_EMAIL 
@@ -41,13 +47,8 @@ const sendEmail = async (to, subject, textContent) => {
     await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`✅ Email sent successfully to ${to}`);
   } catch (error) {
-    console.error("❌ EMAIL FAILED. Reason:");
-    if (error.response && error.response.text) {
-        console.error(error.response.text); // Prints the exact reason from Brevo
-    } else {
-        console.error(error);
-    }
-    throw error; 
+    console.error("❌ EMAIL FAILED:", error.response ? error.response.text : error.message);
+    // We catch the error so the server stays alive
   }
 };
 
@@ -88,8 +89,8 @@ router.post('/register-init', async (req, res) => {
     res.status(200).json({ message: 'OTP sent!' });
 
   } catch (err) {
-    // Error is already logged in the terminal
-    res.status(500).json({ message: 'Server Error. Check backend terminal for details.' });
+    console.error("Register Error:", err);
+    res.status(500).json({ message: 'Server Error' });
   }
 });
 
