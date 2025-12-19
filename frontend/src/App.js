@@ -4,7 +4,6 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer'; 
 import Home from './pages/Home';
 import Shop from './pages/Shop';
-// import Story from './pages/Story';
 import Ingredients from './pages/Ingredients';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword'; 
@@ -17,16 +16,17 @@ import UserProfile from './pages/UserProfile';
 import ProductDetails from './pages/ProductDetails'; 
 import toast from 'react-hot-toast'; 
 
+// --- CRITICAL FIX: This imports your custom CSS ---
+import './App.css'; 
+// --------------------------------------------------
+
 function App() {
   const [cart, setCart] = useState([]);
   const [user, setUser] = useState(null);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [discount, setDiscount] = useState(0); 
 
-  // --- FIX: Safer Local Storage Loading ---
-  // This prevents the "undefined is not valid JSON" crash
   useEffect(() => {
-    // Safer User Loading
     const storedUser = localStorage.getItem('user');
     if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
         try {
@@ -37,7 +37,6 @@ function App() {
         }
     }
 
-    // Safer Cart Loading
     const storedCart = localStorage.getItem('cart');
     if (storedCart && storedCart !== "undefined" && storedCart !== "null") {
         try {
@@ -129,12 +128,9 @@ function App() {
             <Route path="/" element={<Home addToCart={addToCart} />} />
             <Route path="/shop" element={<Shop addToCart={addToCart} />} />
             <Route path="/product/:id" element={<ProductDetails addToCart={addToCart} />} />
-            
-            {/* <Route path="/story" element={<Story />} /> */}
             <Route path="/ingredients" element={<Ingredients />} />
             <Route path="/login" element={<Login onLogin={handleLogin} />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            
             <Route path="/cart" element={<Cart cartItems={cart} updateQuantity={updateCartQuantity} removeFromCart={removeFromCart} discount={discount} setDiscount={setDiscount} />} />
             <Route path="/checkout" element={<Checkout cart={cart} initCheckout={initCheckout} />} />
             <Route path="/payment" element={<Payment order={currentOrder} clearCart={clearCart} user={user} />} />

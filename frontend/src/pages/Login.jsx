@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Loader, KeyRound, CheckCircle, ShieldAlert, RefreshCw, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Loader, KeyRound, CheckCircle, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiClient from '../api/apiClient';
 
@@ -99,8 +99,17 @@ const Login = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+        
+        {/* --- ADDED BRAND LOGO HERE --- */}
+        <div className="flex justify-center mb-2">
+            <h1 className="text-logo" style={{fontSize: '2.5rem'}}>
+                Gear <span>UP</span>
+            </h1>
+        </div>
+        {/* ----------------------------- */}
+
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+          <h2 className="text-2xl font-extrabold text-gray-900">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
           <p className="mt-2 text-sm text-gray-600">
              {isLogin ? "Login to access your orders" : regStep === 1 ? "Enter details to verify email" : regStep === 2 ? "Check your inbox for code" : "Secure your account"}
           </p>

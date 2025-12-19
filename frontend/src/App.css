@@ -1,44 +1,44 @@
-.App {
-  text-align: center;
+/* --- Global Settings --- */
+:root {
+  --primary-color: #2563EB; /* GearUP Blue */
+  --text-dark: #1F2937;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+/* --- STEP 2: TEXT LOGO STYLES --- */
+.text-logo {
+  font-family: 'Caveat', cursive; /* The Handwritten Font */
+  font-weight: 700;
+  font-size: 2.5rem; /* Large size */
+  color: #1F2937;    /* Dark Grey for 'Gear' */
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.text-logo span {
+  color: #2563EB; /* Blue for 'UP' */
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .text-logo {
+    font-size: 2rem; /* Slightly smaller on mobile */
   }
 }
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* -------------------------------- */
 
 
-/* Fly to Cart Animation */
+/* --- Fly to Cart Animation --- */
 @keyframes flyToCart {
   0% {
     opacity: 1;
@@ -46,18 +46,18 @@
   }
   100% {
     opacity: 0;
-    transform: scale(0.1) translate(40vw, -40vh); /* Adjust based on cart position */
+    transform: scale(0.1) translate(40vw, -40vh);
   }
 }
 
 .fly-item {
   position: fixed;
-  z-index: 1000;
+  z-index: 9999;
   width: 50px;
   height: 50px;
   border-radius: 50%;
   object-fit: cover;
   pointer-events: none;
-  animation: flyToCart 0.8s ease-in-out forwards;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  animation: flyToCart 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }

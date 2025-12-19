@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, Plus, Edit, Trash2, X, Menu, TicketPercent, BarChart2, Users, DollarSign, Eye, MapPin } from 'lucide-react';
+import { Package, Truck, Plus, Edit, Trash2, X, Menu, TicketPercent, BarChart2, Users, DollarSign, Eye } from 'lucide-react';
 import apiClient from '../api/apiClient';
 import toast from 'react-hot-toast';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-
-const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']; // Changed to Blue/Modern Theme
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -18,11 +16,10 @@ const AdminDashboard = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewingOrder, setViewingOrder] = useState(null);
 
-  // UPDATED FORM DATA STATE
   const [formData, setFormData] = useState({
     name: '', price: '', originalPrice: '', category: 'Back Cover', 
     tag: '', description: '', isAvailable: true, image: '',
-    brand: '', compatibility: '', color: '', material: '' // New Fields
+    brand: '', compatibility: '', color: '', material: ''
   });
   
   const [couponData, setCouponData] = useState({ code: '', discountPercentage: '' });
@@ -47,11 +44,7 @@ const AdminDashboard = () => {
         const res = await apiClient.get('/coupons');
         setCoupons(res.data);
       }
-    } catch (error) {
-      toast.error("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { toast.error("Failed to load data"); } finally { setLoading(false); }
   };
 
   const handleInputChange = (e) => {
@@ -61,16 +54,12 @@ const AdminDashboard = () => {
 
   const handleFileChange = (e) => {
       const file = e.target.files[0];
-      if (file) {
-          setImageFile(file);
-          setImagePreview(URL.createObjectURL(file));
-      }
+      if (file) { setImageFile(file); setImagePreview(URL.createObjectURL(file)); }
   };
 
   const handleSubmitProduct = async (e) => {
       e.preventDefault();
       const data = new FormData();
-      // Basic Fields
       data.append('name', formData.name);
       data.append('price', formData.price);
       data.append('originalPrice', formData.originalPrice);
@@ -78,8 +67,6 @@ const AdminDashboard = () => {
       data.append('tag', formData.tag);
       data.append('description', formData.description);
       data.append('isAvailable', formData.isAvailable);
-      
-      // New Mobile Fields
       data.append('brand', formData.brand);
       data.append('compatibility', formData.compatibility);
       data.append('color', formData.color);
@@ -96,12 +83,8 @@ const AdminDashboard = () => {
               await apiClient.post('/products', data);
               toast.success("Product Created!");
           }
-          setShowModal(false);
-          setEditingProduct(null);
-          fetchData();
-      } catch (error) {
-          toast.error("Operation failed.");
-      }
+          setShowModal(false); setEditingProduct(null); fetchData();
+      } catch (error) { toast.error("Operation failed."); }
   };
 
   const handleDeleteProduct = async (id) => {
@@ -141,7 +124,14 @@ const AdminDashboard = () => {
       
       {/* Mobile Header */}
       <div className="md:hidden bg-gray-900 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
-          <h2 className="text-xl font-bold text-blue-400">Mobile Gear Admin</h2>
+          {/* --- UPDATED LOGO (MOBILE ADMIN) --- */}
+          <h2 className="flex items-center gap-1">
+             <span className="text-logo" style={{fontSize: '1.5rem', color: 'white'}}>
+               Gear <span style={{color: '#60A5FA'}}>UP</span>
+             </span>
+             <span className="text-gray-400 text-sm font-bold mt-1 ml-1">Admin</span>
+          </h2>
+          {/* ----------------------------------- */}
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-gray-800 rounded-lg">
               {isSidebarOpen ? <X size={24}/> : <Menu size={24}/>}
           </button>
@@ -153,7 +143,15 @@ const AdminDashboard = () => {
           md:translate-x-0 md:static md:block
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <h2 className="text-2xl font-bold mb-8 text-blue-400 hidden md:block">Mobile Gear</h2>
+        {/* --- UPDATED LOGO (SIDEBAR ADMIN) --- */}
+        <div className="mb-8 hidden md:block">
+            <h2 className="text-logo" style={{fontSize: '2rem', color: 'white'}}>
+                Gear <span style={{color: '#60A5FA'}}>UP</span>
+            </h2>
+            <p className="text-gray-500 text-xs font-bold tracking-widest mt-1">ADMIN DASHBOARD</p>
+        </div>
+        {/* ------------------------------------ */}
+
         <nav className="space-y-4">
           <button onClick={() => { setActiveTab('analytics'); setIsSidebarOpen(false); }} className={`flex items-center gap-3 w-full p-3 rounded-lg transition ${activeTab === 'analytics' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
             <BarChart2 size={20} /> Analytics
@@ -309,7 +307,7 @@ const AdminDashboard = () => {
          )}
       </div>
 
-      {/* PRODUCT MODAL - UPDATED WITH MOBILE FIELDS */}
+      {/* PRODUCT MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] p-6 overflow-y-auto">
@@ -318,14 +316,11 @@ const AdminDashboard = () => {
                     <button onClick={() => setShowModal(false)}><X size={24}/></button>
                 </div>
                 <form onSubmit={handleSubmitProduct} className="space-y-4">
-                    {/* Basic Info */}
-                    <input name="name" value={formData.name} onChange={handleInputChange} placeholder="Product Name (e.g. iPhone 15 Case)" className="w-full border p-2 rounded" required />
-                    
+                    <input name="name" value={formData.name} onChange={handleInputChange} placeholder="Product Name" className="w-full border p-2 rounded" required />
                     <div className="grid grid-cols-2 gap-4">
                          <input name="price" type="number" value={formData.price} onChange={handleInputChange} placeholder="Price" className="w-full border p-2 rounded" required />
                          <input name="originalPrice" type="number" value={formData.originalPrice} onChange={handleInputChange} placeholder="Original Price" className="w-full border p-2 rounded" />
                     </div>
-
                     <select name="category" value={formData.category} onChange={handleInputChange} className="w-full border p-2 rounded">
                         <option value="Back Cover">Back Cover</option>
                         <option value="Screen Guard">Screen Guard</option>
@@ -333,28 +328,22 @@ const AdminDashboard = () => {
                         <option value="Cable">Cable</option>
                         <option value="Earbuds">Earbuds</option>
                     </select>
-
-                    {/* NEW MOBILE FIELDS */}
                     <div className="grid grid-cols-2 gap-4">
-                        <input name="brand" value={formData.brand} onChange={handleInputChange} placeholder="Brand (e.g. Samsung)" className="w-full border p-2 rounded" />
-                        <input name="compatibility" value={formData.compatibility} onChange={handleInputChange} placeholder="Model (e.g. S24 Ultra)" className="w-full border p-2 rounded" />
+                        <input name="brand" value={formData.brand} onChange={handleInputChange} placeholder="Brand" className="w-full border p-2 rounded" />
+                        <input name="compatibility" value={formData.compatibility} onChange={handleInputChange} placeholder="Model" className="w-full border p-2 rounded" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        <input name="color" value={formData.color} onChange={handleInputChange} placeholder="Color (e.g. Black)" className="w-full border p-2 rounded" />
-                        <input name="material" value={formData.material} onChange={handleInputChange} placeholder="Material (e.g. Silicon)" className="w-full border p-2 rounded" />
+                        <input name="color" value={formData.color} onChange={handleInputChange} placeholder="Color" className="w-full border p-2 rounded" />
+                        <input name="material" value={formData.material} onChange={handleInputChange} placeholder="Material" className="w-full border p-2 rounded" />
                     </div>
-
-                    <input name="tag" value={formData.tag} onChange={handleInputChange} placeholder="Tag (e.g. Best Seller)" className="w-full border p-2 rounded" />
+                    <input name="tag" value={formData.tag} onChange={handleInputChange} placeholder="Tag" className="w-full border p-2 rounded" />
                     <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Description" className="w-full border p-2 rounded h-20"></textarea>
-                    
                     <div className="flex items-center gap-2">
                         <input type="checkbox" name="isAvailable" checked={formData.isAvailable} onChange={handleInputChange} id="stock" />
                         <label htmlFor="stock">In Stock</label>
                     </div>
-                    
                     <input type="file" onChange={handleFileChange} className="w-full border p-2 rounded" />
                     {imagePreview && <img src={imagePreview} alt="Preview" className="h-20 object-cover rounded" />}
-                    
                     <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Save Product</button>
                 </form>
             </div>
