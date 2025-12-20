@@ -1,385 +1,205 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, Plus, Edit, Trash2, X, Menu, TicketPercent, BarChart2, Users, DollarSign, Eye } from 'lucide-react';
-import apiClient from '../api/apiClient';
+import axios from '../api/apiClient'; // Use your configured apiClient
 import toast from 'react-hot-toast';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('analytics');
   const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [coupons, setCoupons] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [viewingOrder, setViewingOrder] = useState(null);
-
-  const [formData, setFormData] = useState({
-    name: '', price: '', originalPrice: '', category: 'Back Cover', 
-    tag: '', description: '', isAvailable: true, image: '',
-    brand: '', compatibility: '', color: '', material: ''
-  });
   
-  const [couponData, setCouponData] = useState({ code: '', discountPercentage: '' });
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  // Form State
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('Mobile Covers'); // Default category
+  const [countInStock, setCountInStock] = useState('');
+  const [description, setDescription] = useState('');
+  const [image, setImage] = useState(null);
 
-  useEffect(() => { fetchData(); }, [activeTab]);
+  // Load Products
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchProducts = async () => {
     try {
-      if (activeTab === 'analytics') {
-          const res = await apiClient.get('/admin/stats');
-          setStats(res.data);
-      } else if (activeTab === 'products') {
-        const res = await apiClient.get('/products');
-        setProducts(res.data);
-      } else if (activeTab === 'orders') {
-        const res = await apiClient.get('/orders/all-orders');
-        setOrders(res.data);
-      } else if (activeTab === 'coupons') {
-        const res = await apiClient.get('/coupons');
-        setCoupons(res.data);
-      }
-    } catch (error) { toast.error("Failed to load data"); } finally { setLoading(false); }
+      const { data } = await axios.get('/products');
+      setProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-  };
-
+  // --- HANDLE FILE SELECTION ---
   const handleFileChange = (e) => {
-      const file = e.target.files[0];
-      if (file) { setImageFile(file); setImagePreview(URL.createObjectURL(file)); }
+    const file = e.target.files[0];
+    if (file) {
+        // Optional: Check file size (e.g. 5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("File too large. Max 5MB.");
+            return;
+        }
+        setImage(file);
+    }
   };
 
-  const handleSubmitProduct = async (e) => {
-      e.preventDefault();
-      const data = new FormData();
-      data.append('name', formData.name);
-      data.append('price', formData.price);
-      data.append('originalPrice', formData.originalPrice);
-      data.append('category', formData.category);
-      data.append('tag', formData.tag);
-      data.append('description', formData.description);
-      data.append('isAvailable', formData.isAvailable);
-      data.append('brand', formData.brand);
-      data.append('compatibility', formData.compatibility);
-      data.append('color', formData.color);
-      data.append('material', formData.material);
+  // --- HANDLE SUBMIT ---
+  const submitHandler = async (e) => {
+    e.preventDefault();
 
-      if (imageFile) data.append('imageFile', imageFile);
-      else data.append('image', formData.image);
+    if (!image) {
+        toast.error("Please select an image");
+        return;
+    }
 
-      try {
-          if (editingProduct) {
-              await apiClient.put(`/products/${editingProduct._id}`, data);
-              toast.success("Product Updated!");
-          } else {
-              await apiClient.post('/products', data);
-              toast.success("Product Created!");
-          }
-          setShowModal(false); setEditingProduct(null); fetchData();
-      } catch (error) { toast.error("Operation failed."); }
-  };
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('price', price);
+    formData.append('category', category);
+    formData.append('countInStock', countInStock);
+    formData.append('description', description);
+    formData.append('image', image); // Must match backend upload.single('image')
 
-  const handleDeleteProduct = async (id) => {
-      if(window.confirm("Are you sure?")) {
-          try { await apiClient.delete(`/products/${id}`); toast.success("Product Deleted"); fetchData(); } 
-          catch (error) { toast.error("Delete failed"); }
-      }
-  };
+    const loadingToast = toast.loading('Uploading Product...');
 
-  const handleCouponSubmit = async (e) => {
-      e.preventDefault();
-      try {
-          await apiClient.post('/coupons', couponData);
-          toast.success("Coupon Created!");
-          setCouponData({ code: '', discountPercentage: '' });
-          fetchData();
-      } catch (error) { toast.error("Failed to create coupon"); }
-  };
-
-  const handleDeleteCoupon = async (id) => {
-      if(window.confirm("Delete?")) {
-          try { await apiClient.delete(`/coupons/${id}`); toast.success("Deleted"); fetchData(); } 
-          catch (error) { toast.error("Delete failed"); }
-      }
-  };
-
-  const updateOrderStatus = async (orderId, newStatus) => {
     try {
-        await apiClient.put(`/orders/${orderId}/status`, { status: newStatus });
-        toast.success(`Updated to ${newStatus}`);
-        fetchData();
-    } catch (error) { toast.error("Failed to update status"); }
+      // Axios automatically sets Content-Type to multipart/form-data when sending FormData
+      await axios.post('/products', formData);
+      
+      toast.dismiss(loadingToast);
+      toast.success('Product Created Successfully!');
+      
+      // Reset Form
+      setName('');
+      setPrice('');
+      setCountInStock('');
+      setDescription('');
+      setImage(null);
+      // Refresh list
+      fetchProducts();
+
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error("Upload Error:", error.response?.data);
+      // Show the actual error message from backend
+      toast.error(error.response?.data?.message || 'Failed to create product');
+    }
+  };
+
+  const deleteHandler = async (id) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      try {
+        await axios.delete(`/products/${id}`);
+        toast.success('Product Deleted');
+        fetchProducts();
+      } catch (error) {
+        toast.error('Failed to delete product');
+      }
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans">
-      
-      {/* Mobile Header */}
-      <div className="md:hidden bg-gray-900 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
-          {/* --- UPDATED LOGO (MOBILE ADMIN) --- */}
-          <h2 className="flex items-center gap-1">
-             <span className="text-logo" style={{fontSize: '1.5rem', color: 'white'}}>
-               Gear <span style={{color: '#60A5FA'}}>UP</span>
-             </span>
-             <span className="text-gray-400 text-sm font-bold mt-1 ml-1">Admin</span>
-          </h2>
-          {/* ----------------------------------- */}
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-gray-800 rounded-lg">
-              {isSidebarOpen ? <X size={24}/> : <Menu size={24}/>}
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-blue-700">Admin Dashboard</h1>
+
+      {/* --- ADD PRODUCT FORM --- */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-10 border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
+        <form onSubmit={submitHandler} className="space-y-4">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input 
+              type="text" placeholder="Product Name" required 
+              className="border p-2 rounded w-full"
+              value={name} onChange={(e) => setName(e.target.value)} 
+            />
+            <input 
+              type="number" placeholder="Price (₹)" required 
+              className="border p-2 rounded w-full"
+              value={price} onChange={(e) => setPrice(e.target.value)} 
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <select 
+               className="border p-2 rounded w-full"
+               value={category} onChange={(e) => setCategory(e.target.value)}
+             >
+               <option value="Mobile Covers">Mobile Covers</option>
+               <option value="Chargers">Chargers</option>
+               <option value="Cables">Cables</option>
+               <option value="Audio">Audio/Headphones</option>
+               <option value="Screen Guards">Screen Guards</option>
+               <option value="Holders">Phone Holders</option>
+               <option value="Materials">Raw Materials</option>
+             </select>
+
+            <input 
+              type="number" placeholder="Count In Stock" required 
+              className="border p-2 rounded w-full"
+              value={countInStock} onChange={(e) => setCountInStock(e.target.value)} 
+            />
+          </div>
+
+          <textarea 
+            placeholder="Description" required 
+            className="border p-2 rounded w-full h-24"
+            value={description} onChange={(e) => setDescription(e.target.value)} 
+          ></textarea>
+
+          {/* Image Input */}
+          <div className="border p-2 rounded bg-gray-50">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={handleFileChange}
+              className="w-full"
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition w-full md:w-auto"
+          >
+            Create Product
           </button>
+        </form>
       </div>
 
-      {/* Sidebar */}
-      <div className={`
-          bg-gray-900 text-white p-6 fixed h-full z-40 w-64 transition-transform duration-300 ease-in-out
-          md:translate-x-0 md:static md:block
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        {/* --- UPDATED LOGO (SIDEBAR ADMIN) --- */}
-        <div className="mb-8 hidden md:block">
-            <h2 className="text-logo" style={{fontSize: '2rem', color: 'white'}}>
-                Gear <span style={{color: '#60A5FA'}}>UP</span>
-            </h2>
-            <p className="text-gray-500 text-xs font-bold tracking-widest mt-1">ADMIN DASHBOARD</p>
+      {/* --- PRODUCT LIST --- */}
+      <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4">Existing Products</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-100 border-b">
+                <th className="p-3">ID</th>
+                <th className="p-3">NAME</th>
+                <th className="p-3">PRICE</th>
+                <th className="p-3">CATEGORY</th>
+                <th className="p-3">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr key={product._id} className="border-b hover:bg-gray-50">
+                  <td className="p-3 text-sm text-gray-600">{product._id.substring(0, 10)}...</td>
+                  <td className="p-3 font-medium">{product.name}</td>
+                  <td className="p-3">₹{product.price}</td>
+                  <td className="p-3">{product.category}</td>
+                  <td className="p-3">
+                    <button 
+                      onClick={() => deleteHandler(product._id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {products.length === 0 && <p className="text-center p-4 text-gray-500">No products found.</p>}
         </div>
-        {/* ------------------------------------ */}
-
-        <nav className="space-y-4">
-          <button onClick={() => { setActiveTab('analytics'); setIsSidebarOpen(false); }} className={`flex items-center gap-3 w-full p-3 rounded-lg transition ${activeTab === 'analytics' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
-            <BarChart2 size={20} /> Analytics
-          </button>
-          <button onClick={() => { setActiveTab('products'); setIsSidebarOpen(false); }} className={`flex items-center gap-3 w-full p-3 rounded-lg transition ${activeTab === 'products' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
-            <Package size={20} /> Products
-          </button>
-          <button onClick={() => { setActiveTab('orders'); setIsSidebarOpen(false); }} className={`flex items-center gap-3 w-full p-3 rounded-lg transition ${activeTab === 'orders' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
-            <Truck size={20} /> Orders
-          </button>
-          <button onClick={() => { setActiveTab('coupons'); setIsSidebarOpen(false); }} className={`flex items-center gap-3 w-full p-3 rounded-lg transition ${activeTab === 'coupons' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
-            <TicketPercent size={20} /> Coupons
-          </button>
-        </nav>
       </div>
-
-      {/* Overlay */}
-      {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
-
-      {/* Main Content */}
-      <div className="flex-1 p-4 md:p-8 w-full overflow-x-hidden">
-         <h1 className="text-2xl md:text-3xl font-bold mb-6 capitalize text-gray-800">{activeTab} Management</h1>
-
-         {loading ? <p>Loading...</p> : (
-             <>
-                {/* ANALYTICS TAB */}
-                {activeTab === 'analytics' && stats && (
-                    <div className="space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-                                <div className="bg-blue-100 p-3 rounded-full text-blue-600"><DollarSign size={24}/></div>
-                                <div><p className="text-gray-500 text-sm">Revenue</p><h3 className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</h3></div>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-                                <div className="bg-blue-100 p-3 rounded-full text-blue-600"><Truck size={24}/></div>
-                                <div><p className="text-gray-500 text-sm">Orders</p><h3 className="text-2xl font-bold">{stats.ordersCount}</h3></div>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-                                <div className="bg-blue-100 p-3 rounded-full text-blue-600"><Users size={24}/></div>
-                                <div><p className="text-gray-500 text-sm">Users</p><h3 className="text-2xl font-bold">{stats.usersCount}</h3></div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                                <h3 className="font-bold text-lg mb-6 text-gray-800">Sales Trend</h3>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={stats.dailySales}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="_id" hide />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Line type="monotone" dataKey="sales" stroke="#2563EB" strokeWidth={3} dot={{r: 4}} />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* PRODUCTS TAB */}
-                {activeTab === 'products' && (
-                    <div>
-                        <button onClick={() => { setEditingProduct(null); setShowModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold mb-6 flex items-center gap-2 hover:bg-blue-700">
-                            <Plus size={20}/> Add Product
-                        </button>
-                        <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-                            <table className="w-full text-left min-w-[600px]">
-                                <thead className="bg-gray-100 border-b">
-                                    <tr><th className="p-4">Image</th><th className="p-4">Name</th><th className="p-4">Category</th><th className="p-4">Price</th><th className="p-4">Actions</th></tr>
-                                </thead>
-                                <tbody>
-                                    {products.map(p => (
-                                        <tr key={p._id} className="border-b hover:bg-gray-50">
-                                            <td className="p-4"><img src={p.image} alt="" className="w-12 h-12 rounded object-cover bg-gray-100"/></td>
-                                            <td className="p-4 font-bold">{p.name}</td>
-                                            <td className="p-4 text-sm text-gray-500">{p.category}</td>
-                                            <td className="p-4">₹{p.price}</td>
-                                            <td className="p-4 flex gap-3">
-                                                <button onClick={() => { setEditingProduct(p); setFormData(p); setImagePreview(p.image); setShowModal(true); }} className="text-blue-600"><Edit size={18}/></button>
-                                                <button onClick={() => handleDeleteProduct(p._id)} className="text-red-600"><Trash2 size={18}/></button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {/* ORDERS TAB */}
-                {activeTab === 'orders' && (
-                    <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-                        <table className="w-full text-left min-w-[700px]">
-                            <thead className="bg-gray-100 border-b">
-                                <tr>
-                                    <th className="p-4">Order ID</th>
-                                    <th className="p-4">Customer</th>
-                                    <th className="p-4">Total</th>
-                                    <th className="p-4">Status</th>
-                                    <th className="p-4">Action</th>
-                                    <th className="p-4">View</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {orders.map(order => (
-                                    <tr key={order._id} className="border-b hover:bg-gray-50">
-                                        <td className="p-4 font-mono text-xs text-gray-500">#{order._id.slice(-6)}</td>
-                                        <td className="p-4"><div className="font-bold">{order.shippingAddress?.fullName}</div></td>
-                                        <td className="p-4 font-bold">₹{order.totalPrice}</td>
-                                        <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">{order.status}</span></td>
-                                        <td className="p-4">
-                                            <select className="border rounded px-2 py-1 text-sm" value={order.status} onChange={(e) => updateOrderStatus(order._id, e.target.value)}>
-                                                <option value="Processing">Processing</option><option value="Shipped">Shipped</option><option value="Delivered">Delivered</option><option value="Cancelled">Cancelled</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-4">
-                                            <button onClick={() => setViewingOrder(order)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-full transition"><Eye size={20}/></button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* COUPONS TAB */}
-                {activeTab === 'coupons' && (
-                    <div className="space-y-8">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-md">
-                            <h3 className="font-bold text-lg mb-4">Create Coupon</h3>
-                            <form onSubmit={handleCouponSubmit} className="space-y-4">
-                                <input type="text" placeholder="Code (e.g. SALE50)" className="w-full border p-2 rounded-lg uppercase" value={couponData.code} onChange={(e) => setCouponData({...couponData, code: e.target.value})} required />
-                                <input type="number" placeholder="Discount %" className="w-full border p-2 rounded-lg" value={couponData.discountPercentage} onChange={(e) => setCouponData({...couponData, discountPercentage: e.target.value})} min="1" max="100" required />
-                                <button type="submit" className="w-full bg-black text-white py-2 rounded-lg font-bold">Create</button>
-                            </form>
-                        </div>
-                        <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-                            <table className="w-full text-left min-w-[400px]">
-                                <thead className="bg-gray-100 border-b"><tr><th className="p-4">Code</th><th className="p-4">Discount</th><th className="p-4">Action</th></tr></thead>
-                                <tbody>
-                                    {coupons.map(c => (
-                                        <tr key={c._id} className="border-b"><td className="p-4 font-bold text-green-700">{c.code}</td><td className="p-4">{c.discountPercentage}%</td><td className="p-4"><button onClick={() => handleDeleteCoupon(c._id)} className="text-red-600"><Trash2 size={18}/></button></td></tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-             </>
-         )}
-      </div>
-
-      {/* PRODUCT MODAL */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] p-6 overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
-                    <button onClick={() => setShowModal(false)}><X size={24}/></button>
-                </div>
-                <form onSubmit={handleSubmitProduct} className="space-y-4">
-                    <input name="name" value={formData.name} onChange={handleInputChange} placeholder="Product Name" className="w-full border p-2 rounded" required />
-                    <div className="grid grid-cols-2 gap-4">
-                         <input name="price" type="number" value={formData.price} onChange={handleInputChange} placeholder="Price" className="w-full border p-2 rounded" required />
-                         <input name="originalPrice" type="number" value={formData.originalPrice} onChange={handleInputChange} placeholder="Original Price" className="w-full border p-2 rounded" />
-                    </div>
-                    <select name="category" value={formData.category} onChange={handleInputChange} className="w-full border p-2 rounded">
-                        <option value="Back Cover">Back Cover</option>
-                        <option value="Screen Guard">Screen Guard</option>
-                        <option value="Charger">Charger</option>
-                        <option value="Cable">Cable</option>
-                        <option value="Earbuds">Earbuds</option>
-                    </select>
-                    <div className="grid grid-cols-2 gap-4">
-                        <input name="brand" value={formData.brand} onChange={handleInputChange} placeholder="Brand" className="w-full border p-2 rounded" />
-                        <input name="compatibility" value={formData.compatibility} onChange={handleInputChange} placeholder="Model" className="w-full border p-2 rounded" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <input name="color" value={formData.color} onChange={handleInputChange} placeholder="Color" className="w-full border p-2 rounded" />
-                        <input name="material" value={formData.material} onChange={handleInputChange} placeholder="Material" className="w-full border p-2 rounded" />
-                    </div>
-                    <input name="tag" value={formData.tag} onChange={handleInputChange} placeholder="Tag" className="w-full border p-2 rounded" />
-                    <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Description" className="w-full border p-2 rounded h-20"></textarea>
-                    <div className="flex items-center gap-2">
-                        <input type="checkbox" name="isAvailable" checked={formData.isAvailable} onChange={handleInputChange} id="stock" />
-                        <label htmlFor="stock">In Stock</label>
-                    </div>
-                    <input type="file" onChange={handleFileChange} className="w-full border p-2 rounded" />
-                    {imagePreview && <img src={imagePreview} alt="Preview" className="h-20 object-cover rounded" />}
-                    <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Save Product</button>
-                </form>
-            </div>
-        </div>
-      )}
-
-      {/* VIEW ORDER MODAL */}
-      {viewingOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] p-6 overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2">Order #{viewingOrder._id.slice(-6)}</h2>
-                    <button onClick={() => setViewingOrder(null)}><X size={24}/></button>
-                </div>
-                <div className="space-y-4">
-                     <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="font-bold">{viewingOrder.shippingAddress?.fullName}</p>
-                        <p className="text-sm text-gray-600">{viewingOrder.shippingAddress?.address}, {viewingOrder.shippingAddress?.city}</p>
-                        <p className="text-sm text-gray-600">Phone: {viewingOrder.shippingAddress?.phone}</p>
-                     </div>
-                     <div>
-                        {viewingOrder.items?.map((item, idx) => (
-                            <div key={idx} className="flex justify-between border-b py-2 text-sm">
-                                <span>{item.quantity}x {item.name}</span>
-                                <span>₹{item.price * item.quantity}</span>
-                            </div>
-                        ))}
-                     </div>
-                     <div className="flex justify-between font-bold pt-2 border-t">
-                        <span>Total</span>
-                        <span>₹{viewingOrder.totalPrice}</span>
-                     </div>
-                </div>
-            </div>
-        </div>
-      )}
     </div>
   );
 };

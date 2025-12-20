@@ -2,123 +2,102 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const { protect, admin } = require('../middleware/authMiddleware');
-const { upload } = require('../config/cloudinary'); 
+const multer = require('multer');
+const cloudinary = require('../config/cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// GET ALL PRODUCTS
+// --- 1. SETUP IMAGE UPLOAD STORAGE ---
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'gearup_products', // Folder name in Cloudinary
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// --- 2. GET ALL PRODUCTS (Public) ---
 router.get('/', async (req, res) => {
-    try {
-        const products = await Product.find({});
-        res.json(products);
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
+  try {
+    const keyword = req.query.keyword
+      ? { name: { $regex: req.query.keyword, $options: 'i' } }
+      : {};
+      
+    // Filter by category if provided
+    const categoryQuery = req.query.category ? { category: req.query.category } : {};
+
+    const products = await Product.find({ ...keyword, ...categoryQuery });
+    res.json(products);
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    res.status(500).json({ message: 'Server Error fetching products' });
+  }
 });
 
-// GET SINGLE PRODUCT
+// --- 3. GET SINGLE PRODUCT (Public) ---
 router.get('/:id', async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id);
-        if (product) res.json(product);
-        else res.status(404).json({ message: 'Product not found' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+  try {
+    const product = await Product.findById(req.params.id);
+    if (product) {
+      res.json(product);
+    } else {
+      res.status(404).json({ message: 'Product not found' });
     }
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
 });
 
-// DELETE PRODUCT
+// --- 4. CREATE PRODUCT (Admin Only) ---
+// Note: 'image' matches the name used in frontend FormData
+router.post('/', protect, admin, upload.single('image'), async (req, res) => {
+  console.log("Create Product Request Recieved");
+  console.log("Body:", req.body);
+  console.log("File:", req.file);
+
+  try {
+    const { name, price, description, category, countInStock } = req.body;
+
+    // VALIDATION: Check if image uploaded successfully
+    if (!req.file) {
+      return res.status(400).json({ message: 'Image upload failed. Please select a valid image file.' });
+    }
+
+    const product = new Product({
+      name,
+      price,
+      description,
+      category,
+      countInStock,
+      image: req.file.path, // Cloudinary URL
+      user: req.user._id,
+    });
+
+    const createdProduct = await product.save();
+    console.log("Product Created:", createdProduct);
+    res.status(201).json(createdProduct);
+
+  } catch (error) {
+    console.error("Product Create Error:", error);
+    // This catches the crash and sends a readable error
+    res.status(500).json({ message: error.message || 'Product creation failed on server' });
+  }
+});
+
+// --- 5. DELETE PRODUCT (Admin Only) ---
 router.delete('/:id', protect, admin, async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id);
-        if (product) {
-            await product.deleteOne();
-            res.json({ message: 'Product removed' });
-        } else {
-            res.status(404).json({ message: 'Product not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+  try {
+    const product = await Product.findById(req.params.id);
+    if (product) {
+      await product.deleteOne();
+      res.json({ message: 'Product removed' });
+    } else {
+      res.status(404).json({ message: 'Product not found' });
     }
-});
-
-// --- CREATE PRODUCT (UPDATED) ---
-router.post('/', protect, admin, upload.single('imageFile'), async (req, res) => {
-    try {
-        let imageUrl = "https://via.placeholder.com/300?text=No+Image"; 
-
-        if (req.file && req.file.path) {
-            imageUrl = req.file.path;
-        } else if (req.body.image && req.body.image.startsWith('http')) {
-            imageUrl = req.body.image;
-        }
-
-        const product = new Product({
-            user: req.user._id,
-            name: req.body.name,
-            price: req.body.price,
-            originalPrice: req.body.originalPrice,
-            image: imageUrl,
-            category: req.body.category,
-            tag: req.body.tag,
-            description: req.body.description,
-            isAvailable: req.body.isAvailable === 'true',
-            
-            // NEW FIELDS
-            brand: req.body.brand,
-            compatibility: req.body.compatibility,
-            color: req.body.color,
-            material: req.body.material
-        });
-
-        const createdProduct = await product.save();
-        res.status(201).json(createdProduct);
-
-    } catch (error) {
-        console.error("Database Save Error:", error);
-        res.status(500).json({ message: 'Product creation failed', error: error.message });
-    }
-});
-
-// --- UPDATE PRODUCT (UPDATED) ---
-router.put('/:id', protect, admin, upload.single('imageFile'), async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id);
-
-        if (product) {
-            let imageUrl = product.image;
-
-            if (req.file && req.file.path) {
-                imageUrl = req.file.path;
-            } else if (req.body.image) {
-                imageUrl = req.body.image;
-            }
-
-            product.name = req.body.name || product.name;
-            product.price = req.body.price || product.price;
-            product.originalPrice = req.body.originalPrice || product.originalPrice;
-            product.description = req.body.description || product.description;
-            product.image = imageUrl;
-            product.category = req.body.category || product.category;
-            product.tag = req.body.tag || product.tag;
-            
-            // NEW FIELDS UPDATE
-            product.brand = req.body.brand || product.brand;
-            product.compatibility = req.body.compatibility || product.compatibility;
-            product.color = req.body.color || product.color;
-            product.material = req.body.material || product.material;
-
-            if (req.body.isAvailable !== undefined) {
-                product.isAvailable = req.body.isAvailable === 'true';
-            }
-
-            const updatedProduct = await product.save();
-            res.json(updatedProduct);
-        } else {
-            res.status(404).json({ message: 'Product not found' });
-        }
-    } catch (error) {
-        console.error("Update Error:", error);
-        res.status(500).json({ message: 'Update failed' });
-    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
 });
 
 module.exports = router;
