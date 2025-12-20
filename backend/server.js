@@ -9,18 +9,25 @@ dotenv.config();
 const app = express();
 
 // --- 1. SECURITY CONFIGURATION (CORS) ---
-// Define allowed origins from .env or default to local development
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',') 
-    : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
+// This allows your Frontend to talk to this Backend
+const allowedOrigins = [
+    'http://localhost:3000', 
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    process.env.CLIENT_URL // <--- This will be your new Render Frontend URL
+];
 
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+            // If the specific origin isn't found, check if it matches the CLIENT_URL env var strictly
+            if (origin === process.env.CLIENT_URL) {
+                return callback(null, true);
+            }
+            // Optional: You can uncomment the line below to block unknown sources for high security
+            // return callback(new Error('CORS policy violation'), false);
         }
         return callback(null, true);
     },
@@ -50,6 +57,11 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Health Check Route (For Render)
+app.get('/', (req, res) => {
+    res.send('GearUp Backend is Running!');
+});
 
 // --- 5. START SERVER ---
 const PORT = process.env.PORT || 5000;

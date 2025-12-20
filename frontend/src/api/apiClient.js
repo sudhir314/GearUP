@@ -1,9 +1,8 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// UPDATED: Points to local backend for development
-// When you deploy, you can change this to your GearUp Render URL
-const API_URL = 'http://localhost:5000/api'; 
+// UPDATED: Automatically detects if we are on Render or Localhost
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -28,7 +27,8 @@ apiClient.interceptors.response.use(
         const originalRequest = error.config;
         
         if (error.message === "Network Error") {
-            toast.error("Cannot connect to server. Check internet.");
+            // Suppress toast if it's just a page reload
+            console.error("Network Error:", error);
             return Promise.reject(error);
         }
 
@@ -46,7 +46,6 @@ apiClient.interceptors.response.use(
             } catch (refreshError) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                // Optional redirect to login
                 return Promise.reject(refreshError); 
             }
         }
