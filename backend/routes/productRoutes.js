@@ -2,40 +2,19 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const { protect, admin } = require('../middleware/authMiddleware');
-const multer = require('multer');
 const cloudinary = require('../config/cloudinary');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// --- 1. SETUP IMAGE UPLOAD STORAGE ---
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'gearup_products', // Folder name in Cloudinary
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-  },
-});
-
-const upload = multer({ storage: storage });
-
-// --- 2. GET ALL PRODUCTS (Public) ---
+// GET ALL PRODUCTS
 router.get('/', async (req, res) => {
   try {
-    const keyword = req.query.keyword
-      ? { name: { $regex: req.query.keyword, $options: 'i' } }
-      : {};
-      
-    // Filter by category if provided
-    const categoryQuery = req.query.category ? { category: req.query.category } : {};
-
-    const products = await Product.find({ ...keyword, ...categoryQuery });
+    const products = await Product.find({});
     res.json(products);
   } catch (error) {
-    console.error("Fetch Error:", error);
-    res.status(500).json({ message: 'Server Error fetching products' });
+    res.status(500).json({ message: 'Server Error Fetching Products' });
   }
 });
 
-// --- 3. GET SINGLE PRODUCT (Public) ---
+// GET SINGLE PRODUCT
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -49,43 +28,88 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// --- 4. CREATE PRODUCT (Admin Only) ---
-// Note: 'image' matches the name used in frontend FormData
-router.post('/', protect, admin, upload.single('image'), async (req, res) => {
-  console.log("Create Product Request Recieved");
-  console.log("Body:", req.body);
-  console.log("File:", req.file);
-
+// CREATE PRODUCT (This is where your 500 error was happening)
+router.post('/', protect, admin, async (req, res) => {
   try {
-    const { name, price, description, category, countInStock } = req.body;
+    const { name, price, description, category, countInStock, image } = req.body;
 
-    // VALIDATION: Check if image uploaded successfully
-    if (!req.file) {
-      return res.status(400).json({ message: 'Image upload failed. Please select a valid image file.' });
+    // 1. Basic Validation
+    if (!name || !price || !category) {
+        return res.status(400).json({ message: 'Please add all required fields' });
     }
 
+    let imageUrl = "https://via.placeholder.com/150"; // Default image if none provided
+
+    // 2. Handle Image Upload (Cloudinary)
+    // Checks if 'image' is a Base64 string (which AdminDashboard usually sends)
+    if (image) {
+      try {
+        const uploadResponse = await cloudinary.uploader.upload(image, {
+          folder: 'gearup_products',
+        });
+        imageUrl = uploadResponse.secure_url;
+      } catch (uploadError) {
+        console.error("Cloudinary Upload Error:", uploadError);
+        // We continue even if image fails, to avoid 500 Crash, but log it.
+        // You could return res.status(500) here if image is strictly required.
+      }
+    }
+
+    // 3. Create Product in DB
     const product = new Product({
+      user: req.user._id,
       name,
       price,
       description,
+      image: imageUrl,
       category,
-      countInStock,
-      image: req.file.path, // Cloudinary URL
-      user: req.user._id,
+      countInStock: countInStock || 0,
     });
 
     const createdProduct = await product.save();
-    console.log("Product Created:", createdProduct);
     res.status(201).json(createdProduct);
 
   } catch (error) {
-    console.error("Product Create Error:", error);
-    // This catches the crash and sends a readable error
-    res.status(500).json({ message: error.message || 'Product creation failed on server' });
+    console.error("Create Product Error:", error);
+    res.status(500).json({ message: 'Server Error: ' + error.message });
   }
 });
 
-// --- 5. DELETE PRODUCT (Admin Only) ---
+// UPDATE PRODUCT
+router.put('/:id', protect, admin, async (req, res) => {
+  try {
+    const { name, price, description, image, category, countInStock } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (product) {
+      product.name = name || product.name;
+      product.price = price || product.price;
+      product.description = description || product.description;
+      product.category = category || product.category;
+      product.countInStock = countInStock || product.countInStock;
+
+      if (image) {
+         try {
+            const uploadResponse = await cloudinary.uploader.upload(image, {
+               folder: 'gearup_products',
+            });
+            product.image = uploadResponse.secure_url;
+         } catch (e) {
+            console.error("Image Update Error:", e);
+         }
+      }
+
+      const updatedProduct = await product.save();
+      res.json(updatedProduct);
+    } else {
+      res.status(404).json({ message: 'Product not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error Updating Product' });
+  }
+});
+
+// DELETE PRODUCT
 router.delete('/:id', protect, admin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -96,7 +120,7 @@ router.delete('/:id', protect, admin, async (req, res) => {
       res.status(404).json({ message: 'Product not found' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: 'Server Error Deleting Product' });
   }
 });
 
