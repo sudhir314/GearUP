@@ -8,7 +8,7 @@ const User = require('../models/User');
 const SibApiV3Sdk = require('sib-api-v3-sdk');
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
 
-// Debug Check: Warn if keys are missing (doesn't crash server)
+// Debug Check
 if (!process.env.BREVO_API_KEY) {
     console.error("⚠️ WARNING: BREVO_API_KEY is missing in .env file!");
 }
@@ -18,7 +18,6 @@ apiKey.apiKey = process.env.BREVO_API_KEY;
 
 // --- 2. SEND EMAIL FUNCTION ---
 const sendEmail = async (to, subject, textContent) => {
-  // If keys are missing, don't crash, just log error
   if (!process.env.BREVO_API_KEY || !process.env.SENDER_EMAIL) {
       console.error("❌ EMAIL FAILED: Missing .env keys");
       return; 
@@ -30,15 +29,15 @@ const sendEmail = async (to, subject, textContent) => {
   sendSmtpEmail.subject = subject;
   sendSmtpEmail.htmlContent = `
     <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; border: 1px solid #e5e7eb; border-radius: 8px;">
-      <h2 style="color: #2563EB;">Mobile Gear</h2>
+      <h2 style="color: #2563EB;">GearUp</h2>
       <p style="font-size: 16px;">${textContent}</p>
       <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-      <p style="font-size: 12px; color: #777;">Sent securely by Mobile Gear Team.</p>
+      <p style="font-size: 12px; color: #777;">Sent securely by GearUp Team.</p>
     </div>`;
   
   // USE VERIFIED SENDER FROM .ENV
   sendSmtpEmail.sender = { 
-      "name": "Mobile Gear Team", 
+      "name": "GearUp Team", // CHANGED
       "email": process.env.SENDER_EMAIL 
   }; 
   sendSmtpEmail.to = [{ "email": to }];
@@ -48,7 +47,6 @@ const sendEmail = async (to, subject, textContent) => {
     console.log(`✅ Email sent successfully to ${to}`);
   } catch (error) {
     console.error("❌ EMAIL FAILED:", error.response ? error.response.text : error.message);
-    // We catch the error so the server stays alive
   }
 };
 
@@ -159,11 +157,13 @@ router.post('/forgot-password', async (req, res) => {
     user.otp = otp; user.otpExpires = otpExpires;
     await user.save();
 
-    await sendEmail(emailLower, 'Reset Password - Mobile Gear', `Your reset code is: <b>${otp}</b>`);
+    // CHANGED: Mobile Gear -> GearUp
+    await sendEmail(emailLower, 'Reset Password - GearUp', `Your reset code is: <b>${otp}</b>`);
     res.json({ message: 'OTP sent to your email' });
   } catch (error) { res.status(500).json({ message: 'Server Error' }); }
 });
 
+// ... (Rest of the file remains unchanged)
 router.post('/verify-forgot-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
