@@ -4,20 +4,33 @@ const Ingredients = () => {
   return (
     <div className="py-16 bg-white">
         <div className="container mx-auto px-4">
-            <h1 className="text-4xl font-bold text-center mb-12">Know Your Ingredients</h1>
+            <h1 className="text-4xl font-bold text-center mb-12">Our Premium Materials</h1>
             <div className="grid md:grid-cols-3 gap-8">
-                <div className="bg-gray-50 p-8 rounded-3xl hover:bg-purple-50 transition border border-transparent hover:border-purple-200">
-                    <h3 className="text-2xl font-bold mb-4 text-purple-900">Alum</h3>
-                    <p className="text-gray-600 leading-relaxed">Naturally astringent, anti-inflammatory, and antimicrobial. A time-tested mineral salt that fights germs and body odor while reducing wetness caused by excessive perspiration.</p>
+                
+                {/* Item 1 */}
+                <div className="bg-gray-50 p-8 rounded-3xl hover:bg-blue-50 transition border border-transparent hover:border-blue-200">
+                    <h3 className="text-2xl font-bold mb-4 text-blue-900">9H Tempered Glass</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                        Engineered for maximum impact resistance. Our screen guards use 9H hardness glass that resists scratches from keys and coins while maintaining 99.9% transparency and touch sensitivity.
+                    </p>
                 </div>
-                <div className="bg-gray-50 p-8 rounded-3xl hover:bg-green-50 transition border border-transparent hover:border-green-200">
-                    <h3 className="text-2xl font-bold mb-4 text-green-700">Aloe Vera</h3>
-                    <p className="text-gray-600 leading-relaxed">Nature’s skin panacea. An ideal skin hydrant and nourisher for dull and sensitive skin. Renowned for healing, skin-protecting, antifungal, and tyrosinase-inhibiting properties.</p>
+
+                {/* Item 2 */}
+                <div className="bg-gray-50 p-8 rounded-3xl hover:bg-gray-50 transition border border-transparent hover:border-gray-200">
+                    <h3 className="text-2xl font-bold mb-4 text-gray-800">Polycarbonate (PC)</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                        The gold standard for hard cases. Lightweight yet incredibly durable, our PC material provides rigid structural support to absorb shock and prevent your device from bending or cracking upon impact.
+                    </p>
                 </div>
-                <div className="bg-gray-50 p-8 rounded-3xl hover:bg-orange-50 transition border border-transparent hover:border-orange-200">
-                    <h3 className="text-2xl font-bold mb-4 text-orange-600">Turmeric</h3>
-                    <p className="text-gray-600 leading-relaxed">A powerhouse for fighting microbes in hot and humid weather. Helps remove skin darkening and tanning, enhancing natural skin tone and texture.</p>
+
+                {/* Item 3 */}
+                <div className="bg-gray-50 p-8 rounded-3xl hover:bg-indigo-50 transition border border-transparent hover:border-indigo-200">
+                    <h3 className="text-2xl font-bold mb-4 text-indigo-600">Shock-Absorbing TPU</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                        Flexible Thermoplastic Polyurethane (TPU) bumpers wrap around your phone's edges. This material excels at absorbing the energy from drops, protecting the delicate corners of your device.
+                    </p>
                 </div>
+
             </div>
         </div>
     </div>

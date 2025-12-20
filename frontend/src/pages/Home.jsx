@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Star, ShieldCheck, Zap, Smartphone, Headphones, BatteryCharging, ShoppingBag } from 'lucide-react';
 import apiClient from '../api/apiClient'; 
+import { useCart } from '../context/CartContext'; // --- IMPORT HOOK ---
 
 // YOU MUST REPLACE THESE IMAGES IN YOUR ASSETS FOLDER
 import actionImg from '../assets/action.webp'; 
@@ -30,8 +31,9 @@ const blogs = [
     }
 ];
 
-const Home = ({ addToCart }) => {
+const Home = () => { // --- REMOVED PROPS ---
   const navigate = useNavigate(); 
+  const { addToCart } = useCart(); // --- USE CONTEXT ---
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
@@ -125,7 +127,7 @@ const Home = ({ addToCart }) => {
                                   
                                   <div className="absolute bottom-3 left-3 right-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                                       <button 
-                                        onClick={(e) => { e.preventDefault(); addToCart && addToCart(product); }} 
+                                        onClick={(e) => { e.preventDefault(); addToCart(product); }} 
                                         className="w-full bg-white text-black text-xs md:text-sm font-bold py-2 md:py-3 rounded-xl shadow-md hover:bg-black hover:text-white transition"
                                       >
                                         Add to Cart
@@ -188,7 +190,6 @@ const Home = ({ addToCart }) => {
               <div className="md:w-1/2 w-full relative">
                    <div className="absolute -inset-4 bg-blue-200 rounded-[2rem] rotate-3 opacity-30 blur-xl"></div>
                    <div className="relative h-64 md:h-[400px] w-full rounded-2xl overflow-hidden shadow-xl">
-                       {/* Make sure you have an image here, or the placeholder will show */}
                        <img src={actionImg} alt="Mobile Action" className="w-full h-full object-cover hover:scale-105 transition duration-700" />
                    </div>
               </div>

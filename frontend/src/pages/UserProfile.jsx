@@ -66,7 +66,7 @@ const UserProfile = () => {
                 {/* Profile Card */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-700"> {/* Changed to Blue */}
                             <User size={24} />
                         </div>
                         <div>
@@ -111,10 +111,9 @@ const UserProfile = () => {
             </div>
 
             {/* RIGHT COLUMN: Order History */}
-            {/* Added mt-6 for mobile to separate from top section clearly */}
             <div className="md:col-span-2 mt-6 md:mt-0">
                 <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <Package className="text-green-700" /> Order History
+                    <Package className="text-blue-600" /> Order History {/* Changed to Blue */}
                 </h3>
 
                 {orders.length === 0 ? (
@@ -122,7 +121,7 @@ const UserProfile = () => {
                         <Package size={48} className="mx-auto text-gray-300 mb-4" />
                         <h4 className="text-xl font-bold text-gray-600">No orders yet</h4>
                         <p className="text-gray-500 mb-6">Looks like you haven't bought anything yet.</p>
-                        <button onClick={() => navigate('/shop')} className="bg-green-700 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-800 transition">
+                        <button onClick={() => navigate('/shop')} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition"> {/* Changed to Blue */}
                             Start Shopping
                         </button>
                     </div>
@@ -171,8 +170,9 @@ const UserProfile = () => {
                                 </div>
                                 
                                 {order.status === 'Delivered' && (
+                                    // CHANGED: "Phitku" -> "GearUp"
                                     <div className="bg-green-50 px-4 py-2 text-xs text-green-700 text-center font-medium">
-                                        This order has been delivered. Thank you for shopping with Phitku!
+                                        This order has been delivered. Thank you for shopping with GearUp!
                                     </div>
                                 )}
                             </div>

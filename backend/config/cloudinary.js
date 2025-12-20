@@ -13,7 +13,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'phitku_ecommerce_products', // This is the folder where images will be saved in Cloudinary
+        folder: 'gearup_mobile_accessories', // UPDATED FOLDER NAME
         allowed_formats: ['jpeg', 'png', 'jpg'],
         // Optional: Define automatic image resizing for consistency
         transformation: [{ width: 800, height: 800, crop: "limit" }] 

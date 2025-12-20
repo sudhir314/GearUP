@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import apiClient from '../api/apiClient';
-import { Star, ShoppingBag, ArrowLeft, Truck, ShieldCheck, Tag, Droplet } from 'lucide-react';
+import { Star, ShoppingBag, ArrowLeft, Truck, ShieldCheck, Tag, Smartphone } from 'lucide-react'; // CHANGED: Droplet -> Smartphone
 import toast from 'react-hot-toast';
 import '../App.css'; 
 
@@ -137,14 +137,15 @@ const ProductDetails = ({ addToCart }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-8">
+                    {/* CHANGED: Colors and Text to match Tech theme */}
                     <div className="flex items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                        <Truck size={20} className="text-green-600"/> <span>Fast Delivery</span>
+                        <Truck size={20} className="text-blue-600"/> <span>Fast Delivery</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                        <ShieldCheck size={20} className="text-green-600"/> <span>100% Natural</span>
+                        <ShieldCheck size={20} className="text-blue-600"/> <span>Premium Quality</span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                        <Tag size={20} className="text-green-600"/> <span>Best Prices</span>
+                        <Tag size={20} className="text-blue-600"/> <span>Best Prices</span>
                     </div>
                 </div>
             </div>
@@ -167,7 +168,7 @@ const ProductDetails = ({ addToCart }) => {
                                     <img src={item.image} alt={item.name} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center opacity-70">
-                                        <Droplet size={32} className="text-gray-400" />
+                                        <Smartphone size={32} className="text-gray-400" />
                                     </div>
                                 )}
                             </div>

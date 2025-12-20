@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Star, Heart, SlidersHorizontal, Loader, X, Droplet } from 'lucide-react';
+import { Star, Heart, SlidersHorizontal, Loader, X, Smartphone, Package } from 'lucide-react'; // CHANGED: Droplet -> Smartphone
 import { Link } from 'react-router-dom'; 
 import toast from 'react-hot-toast';
 import apiClient from '../api/apiClient'; 
 import axios from 'axios'; 
-import '../App.css'; // Ensure CSS is imported
+import '../App.css'; 
 
 const Shop = ({ addToCart, addToWishlist }) => {
   const [products, setProducts] = useState([]); 
@@ -39,22 +39,16 @@ const Shop = ({ addToCart, addToWishlist }) => {
   // Animation Handler
   const handleAddToCartWithAnimation = (e, product) => {
       e.preventDefault();
-      e.stopPropagation(); // Stop link navigation
+      e.stopPropagation(); 
       
-      // Get click coordinates
       const rect = e.target.getBoundingClientRect();
       const style = {
           top: `${rect.top}px`,
           left: `${rect.left}px`,
       };
 
-      // Set the flying image
       setFlyingImage({ src: product.image, style });
-
-      // Trigger actual cart add
       addToCart(product);
-
-      // Remove animation element after it finishes
       setTimeout(() => setFlyingImage(null), 800);
   };
 
@@ -84,21 +78,16 @@ const Shop = ({ addToCart, addToWishlist }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
-        <Loader className="animate-spin text-green-700" size={48} />
+        {/* CHANGED: Green -> Blue */}
+        <Loader className="animate-spin text-blue-600" size={48} />
       </div>
     );
   }
 
   return (
     <div className="py-8 bg-white min-h-screen relative">
-      {/* Flying Image Element */}
       {flyingImage && (
-          <img 
-            src={flyingImage.src} 
-            alt="" 
-            className="fly-item" 
-            style={flyingImage.style} 
-          />
+          <img src={flyingImage.src} alt="" className="fly-item" style={flyingImage.style} />
       )}
 
       <div className="container mx-auto px-4">
@@ -108,14 +97,14 @@ const Shop = ({ addToCart, addToWishlist }) => {
             
             <div className="flex gap-4 w-full md:w-auto">
                 <button 
-                    className="md:hidden flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:border-green-600 transition"
+                    className="md:hidden flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:border-blue-600 transition"
                     onClick={() => setShowFilters(!showFilters)}
                 >
                     <SlidersHorizontal size={18}/> Filters
                 </button>
 
                 <select 
-                    className="border border-gray-300 px-4 py-2 rounded-lg bg-white w-full md:w-auto focus:outline-none focus:border-green-600 cursor-pointer"
+                    className="border border-gray-300 px-4 py-2 rounded-lg bg-white w-full md:w-auto focus:outline-none focus:border-blue-600 cursor-pointer"
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value)}
                 >
@@ -142,16 +131,17 @@ const Shop = ({ addToCart, addToWishlist }) => {
                     <div className="border-b border-gray-100 pb-6 md:border-none md:pb-0">
                         <h3 className="font-bold mb-4 text-lg text-gray-900">Category</h3>
                         <div className="space-y-3">
-                            {['All', 'Roll-on', 'Foot Spray', 'Intimate', 'Other'].map(cat => (
-                                <label key={cat} className="flex items-center gap-3 cursor-pointer group hover:text-green-700 transition">
+                            {/* CHANGED: Categories from Body Care to Mobile Accessories */}
+                            {['All', 'Back Cover', 'Screen Guard', 'Charger', 'Cable', 'Earbuds'].map(cat => (
+                                <label key={cat} className="flex items-center gap-3 cursor-pointer group hover:text-blue-600 transition">
                                     <input 
                                         type="radio" 
                                         name="category" 
                                         checked={selectedCategory === cat}
                                         onChange={() => setSelectedCategory(cat)}
-                                        className="w-4 h-4 accent-green-700 cursor-pointer"
+                                        className="w-4 h-4 accent-blue-600 cursor-pointer"
                                     />
-                                    <span className={selectedCategory === cat ? "font-semibold text-green-700" : "text-gray-600"}>
+                                    <span className={selectedCategory === cat ? "font-semibold text-blue-600" : "text-gray-600"}>
                                         {cat}
                                     </span>
                                 </label>
@@ -167,15 +157,15 @@ const Shop = ({ addToCart, addToWishlist }) => {
                                 { label: 'Under Rs. 500', value: 'under-500' },
                                 { label: 'Rs. 500 - Rs. 1000', value: '500-1000' }
                             ].map((option) => (
-                                <label key={option.value} className="flex items-center gap-3 cursor-pointer group hover:text-green-700 transition">
+                                <label key={option.value} className="flex items-center gap-3 cursor-pointer group hover:text-blue-600 transition">
                                     <input 
                                         type="radio" 
                                         name="price" 
                                         checked={priceRange === option.value} 
                                         onChange={() => setPriceRange(option.value)} 
-                                        className="w-4 h-4 accent-green-700 cursor-pointer"
+                                        className="w-4 h-4 accent-blue-600 cursor-pointer"
                                     />
-                                    <span className={priceRange === option.value ? "font-semibold text-green-700" : "text-gray-600"}>
+                                    <span className={priceRange === option.value ? "font-semibold text-blue-600" : "text-gray-600"}>
                                         {option.label}
                                     </span>
                                 </label>
@@ -191,7 +181,7 @@ const Shop = ({ addToCart, addToWishlist }) => {
                         <p className="text-gray-500 text-lg mb-2">No products found matching your filters.</p>
                         <button 
                             onClick={() => {setSelectedCategory('All'); setPriceRange('All')}} 
-                            className="text-green-700 font-bold hover:underline"
+                            className="text-blue-600 font-bold hover:underline"
                         >
                             Clear all filters
                         </button>
@@ -217,13 +207,13 @@ const Shop = ({ addToCart, addToWishlist }) => {
                                           <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                                     ) : (
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="w-20 h-40 bg-white/40 rounded-full border border-white/50 backdrop-blur-sm shadow-sm flex flex-col items-center justify-end pb-4">
-                                                <span className="text-[10px] font-bold text-gray-700 uppercase tracking-widest opacity-50">phitku</span>
+                                            {/* CHANGED: Replaced "phitku" text with generic icon */}
+                                            <div className="w-20 h-40 bg-white/40 rounded-xl border border-white/50 backdrop-blur-sm shadow-sm flex flex-col items-center justify-center">
+                                                <Smartphone className="text-gray-400 opacity-50" size={32} />
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* ANIMATED ADD TO CART BUTTON */}
                                     <div className="absolute bottom-3 left-3 right-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                                         <button 
                                             onClick={(e) => handleAddToCartWithAnimation(e, product)} 

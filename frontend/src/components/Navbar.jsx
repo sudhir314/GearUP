@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 
 // (We removed the image import since we are using text now)
 
-const API_URL = 'https://phitku-natural-care.onrender.com/api'; 
+// UPDATED: Points to local backend or your future GearUp deployment
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'; 
 const BRAND_COLOR = '#2563EB'; 
 
 const Navbar = ({ cartCount = 0, user, onLogout }) => {
@@ -52,16 +53,14 @@ const Navbar = ({ cartCount = 0, user, onLogout }) => {
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* --- STEP 3: NEW TEXT LOGO --- */}
+        {/* --- LOGO --- */}
         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-           {/* This uses the CSS class we made in App.css */}
            <h1 className="text-logo">
              Gear <span>UP</span>
            </h1>
-           {/* Optional: Add a little bell icon like your image had */}
            <Bell className="w-6 h-6 text-blue-600 -mt-2 -rotate-12" fill="currentColor" />
         </Link>
-        {/* ----------------------------- */}
+        {/* ------------ */}
 
         {/* Desktop Links */}
         <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-700"> 

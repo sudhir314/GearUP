@@ -9,21 +9,21 @@ dotenv.config();
 const app = express();
 
 // --- 1. SECURITY CONFIGURATION (CORS) ---
+// Define allowed origins from .env or default to local development
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',') 
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
+
 app.use(cors({
-    origin: [
-        'http://localhost:3000', 
-        'http://localhost:3001', // <--- ADDED THIS (Fixes your current error)
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001', // Added for safety
-        'https://sudhir314.github.io', 
-        // Allow HTTPS (Secure)
-        'https://www.solvewithsudhir.in',
-        'https://solvewithsudhir.in',
-        // Allow HTTP (Insecure - Needed while DNS propagates)
-        'http://www.solvewithsudhir.in',
-        'http://solvewithsudhir.in',
-        process.env.CLIENT_URL
-    ].filter(Boolean), 
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
