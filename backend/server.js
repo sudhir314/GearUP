@@ -1,68 +1,65 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const connectDB = require('./config/db');
 const cors = require('cors');
-const cookieParser = require('cookie-parser');
+const path = require('path');
 
+// Load env vars
 dotenv.config();
+
+// Connect to Database
+connectDB();
 
 const app = express();
 
-// --- 1. SECURITY CONFIGURATION (CORS) ---
-// This allows your Frontend to talk to this Backend
+// Increase data limit for images
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// --- CRITICAL FIX: CORS SETUP ---
+// We explicitly define which websites are allowed.
+// We DO NOT use '*' because credentials (cookies/tokens) are being sent.
 const allowedOrigins = [
-    'http://localhost:3000', 
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    process.env.CLIENT_URL // <--- This will be your new Render Frontend URL
+    "http://localhost:3000",              // Your Local Frontend
+    "https://sudhir314.github.io"         // Your Live Frontend
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
+        
         if (allowedOrigins.indexOf(origin) === -1) {
-            // If the specific origin isn't found, check if it matches the CLIENT_URL env var strictly
-            if (origin === process.env.CLIENT_URL) {
-                return callback(null, true);
-            }
-            // Optional: You can uncomment the line below to block unknown sources for high security
-            // return callback(new Error('CORS policy violation'), false);
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
         }
         return callback(null, true);
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true // Allow cookies/authorization headers
 }));
 
-// --- 2. MIDDLEWARE ---
-app.use(express.json()); 
-app.use(cookieParser()); 
+// Routes
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/auth', require('./routes/auth'));
 
-// --- 3. DATABASE CONNECTION ---
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch((err) => console.log("MongoDB Connection Error:", err));
-
-// --- 4. ROUTES ---
-const authRoutes = require('./routes/auth');
-const productRoutes = require('./routes/productRoutes'); 
-const orderRoutes = require('./routes/orderRoutes');     
-const couponRoutes = require('./routes/couponRoutes'); 
-const adminRoutes = require('./routes/adminRoutes');
-
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/coupons', couponRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Health Check Route (For Render)
+// Basic Route
 app.get('/', (req, res) => {
-    res.send('GearUp Backend is Running!');
+    res.send('GearUp API is Running...');
 });
 
-// --- 5. START SERVER ---
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+    console.error("Global Error Handler:", err.stack);
+    res.status(500).json({ 
+        message: 'Internal Server Error', 
+        error: err.message 
+    });
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
