@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const Otp = require('../models/Otp'); // Import the new Otp model
+const Otp = require('../models/Otp');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const sendOtpEmail = require('../utils/sendEmail'); // Import email utility
 
 // Helper: Generate Token
 const generateToken = (id) => {
@@ -16,7 +17,7 @@ const generateOTP = () => {
 };
 
 // ------------------------------------------------------------------
-// 1. REGISTER INIT: Receives Name & Email -> Generates OTP
+// 1. REGISTER INIT: Sends OTP via Email
 // ------------------------------------------------------------------
 router.post('/register-init', async (req, res) => {
   const { name, email } = req.body;
@@ -24,37 +25,31 @@ router.post('/register-init', async (req, res) => {
   if (!name || !email) return res.status(400).json({ message: "Name and Email are required" });
 
   try {
-    // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    // Generate OTP
+    // Generate and Save OTP
     const otp = generateOTP();
-
-    // Save Name, Email, and OTP to temporary DB
-    // (We use upsert: true to update if they request OTP multiple times)
     await Otp.findOneAndUpdate(
       { email },
       { name, email, otp },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // --- IMPORTANT: LOG OTP TO CONSOLE (Since we don't have an email server setup yet) ---
-    console.log("========================================");
-    console.log(`OTP for ${email}: ${otp}`);
-    console.log("========================================");
+    // --- SEND EMAIL HERE ---
+    console.log(`Sending OTP to ${email}...`); // Log for debugging
+    await sendOtpEmail(email, otp); 
 
-    // In a real app, you would send this via email (Brevo/SendGrid)
-    res.status(200).json({ message: 'OTP sent successfully' });
+    res.status(200).json({ message: `OTP sent to ${email}` });
 
   } catch (error) {
     console.error("Register Init Error:", error);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: 'Failed to send OTP. Check server logs.' });
   }
 });
 
 // ------------------------------------------------------------------
-// 2. VERIFY OTP: Checks if OTP matches
+// 2. VERIFY OTP
 // ------------------------------------------------------------------
 router.post('/verify-otp', async (req, res) => {
   const { email, otp } = req.body;
@@ -62,45 +57,33 @@ router.post('/verify-otp', async (req, res) => {
   try {
     const record = await Otp.findOne({ email });
 
-    if (!record) {
-      return res.status(400).json({ message: "OTP expired or not found. Try again." });
-    }
-
-    if (record.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
+    if (!record) return res.status(400).json({ message: "OTP expired or not found." });
+    if (record.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
 
     res.status(200).json({ message: "OTP Verified" });
-
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
   }
 });
 
 // ------------------------------------------------------------------
-// 3. REGISTER FINALIZE: Receives Password -> Creates User
+// 3. REGISTER FINALIZE
 // ------------------------------------------------------------------
 router.post('/register-finalize', async (req, res) => {
   const { email, otp, password } = req.body;
 
   try {
-    // 1. Verify OTP one last time
     const record = await Otp.findOne({ email });
-    if (!record || record.otp !== otp) {
-      return res.status(400).json({ message: "Invalid session or OTP" });
-    }
+    if (!record || record.otp !== otp) return res.status(400).json({ message: "Invalid session or OTP" });
 
-    // 2. Create the User (We get the 'name' from the OTP record)
     const user = await User.create({
       name: record.name,
       email: record.email,
       password: password
     });
 
-    // 3. Delete the used OTP
     await Otp.deleteOne({ email });
 
-    // 4. Return Login Token
     if (user) {
       res.status(201).json({
         _id: user._id,
@@ -112,14 +95,13 @@ router.post('/register-finalize', async (req, res) => {
     } else {
       res.status(400).json({ message: 'Invalid user data' });
     }
-
   } catch (error) {
     res.status(500).json({ message: 'Server Error: ' + error.message });
   }
 });
 
 // ------------------------------------------------------------------
-// STANDARD LOGIN (Keep this for existing users)
+// LOGIN ROUTE
 // ------------------------------------------------------------------
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
