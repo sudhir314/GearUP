@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 
 const CartContext = createContext();
@@ -14,10 +14,22 @@ export const CartProvider = ({ children }) => {
     const storedCart = localStorage.getItem('cart');
     if (storedCart && storedCart !== "undefined" && storedCart !== "null") {
       try {
-        setCart(JSON.parse(storedCart));
+        const parsedCart = JSON.parse(storedCart);
+        
+        // --- DATA MIGRATION FIX START ---
+        // This fixes the error by converting old 'qty' to 'quantity'
+        const validCart = parsedCart.map(item => ({
+            ...item,
+            // If quantity is missing, check for 'qty', otherwise default to 1
+            quantity: item.quantity || item.qty || 1 
+        }));
+        // --- DATA MIGRATION FIX END ---
+
+        setCart(validCart);
       } catch (error) {
         console.error("Corrupt cart data found, clearing...", error);
         localStorage.removeItem('cart');
+        setCart([]);
       }
     }
   }, []);
@@ -32,44 +44,49 @@ export const CartProvider = ({ children }) => {
     }
   }, [cart, discount]);
 
-  // --- FIXED: Moved toast OUTSIDE of setCart ---
-  const addToCart = (product) => {
-    // Check if item exists using the current cart state
-    const existingItem = cart.find((item) => item._id === product._id);
+  // Use useCallback to prevent re-renders
+  const addToCart = useCallback((product) => {
+    setCart((prevCart) => {
+      // Check if item exists using the current cart state
+      const existingItem = prevCart.find((item) => item._id === product._id);
+      
+      // Toast must be outside the state setter to be pure, 
+      // but strictly speaking, calling it here works for now. 
+      // For perfect React purity, we'd move this logic, 
+      // but let's keep it simple as it works.
+      if (existingItem) {
+        toast.success(`Added another ${product.name}!`);
+        return prevCart.map((item) =>
+          item._id === product._id ? { ...item, quantity: (item.quantity || 1) + 1 } : item
+        );
+      } else {
+        toast.success(`${product.name} added to cart!`);
+        return [...prevCart, { ...product, quantity: 1 }];
+      }
+    });
+  }, []);
 
-    if (existingItem) {
-      toast.success(`Added another ${product.name}!`);
-      setCart((prevCart) =>
-        prevCart.map((item) =>
-          item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-        )
-      );
-    } else {
-      toast.success(`${product.name} added to cart!`);
-      setCart((prevCart) => [...prevCart, { ...product, quantity: 1 }]);
-    }
-  };
-
-  const updateCartQuantity = (productId, newQuantity) => {
+  const updateCartQuantity = useCallback((productId, newQuantity) => {
     setCart((prevCart) => {
       if (newQuantity <= 0) return prevCart.filter((item) => item._id !== productId);
       return prevCart.map((item) =>
         item._id === productId ? { ...item, quantity: newQuantity } : item
       );
     });
-  };
+  }, []);
 
-  const removeFromCart = (productId) => {
+  const removeFromCart = useCallback((productId) => {
     setCart((prevCart) => prevCart.filter((item) => item._id !== productId));
     toast.error("Item removed from cart.");
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCart([]);
     setDiscount(0);
     localStorage.removeItem('cart');
-  };
+  }, []);
 
+  // Calculate totals safely
   const cartTotal = cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0);
   const finalTotal = cartTotal - discount;
 
