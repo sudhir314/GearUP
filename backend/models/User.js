@@ -21,18 +21,25 @@ const userSchema = mongoose.Schema(
       required: true,
       default: false,
     },
+    // --- ADDED: Address Storage ---
+    addresses: [{
+       fullName: String,
+       phone: String,
+       email: String,
+       address: String,
+       city: String,
+       pincode: String
+    }]
   },
   {
     timestamps: true,
   }
 );
 
-// Method to check password (THIS WAS LIKELY MISSING)
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Encrypt password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     next();

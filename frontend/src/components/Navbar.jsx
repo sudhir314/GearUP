@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Search, User, Menu, X, LogOut, LayoutDashboard, Package, Bell } from 'lucide-react'; 
+import { ShoppingBag, Search, User, Menu, X, LogOut, LayoutDashboard, Package, Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-// (We removed the image import since we are using text now)
+import { useCart } from '../context/CartContext'; // Import Context
 
 // UPDATED: Points to local backend or your future GearUp deployment
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'; 
 const BRAND_COLOR = '#2563EB'; 
 
-const Navbar = ({ cartCount = 0, user, onLogout }) => {
+const Navbar = ({ user, onLogout }) => { // Removed cartCount prop
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+
+  // --- FIX: Get Cart Data Directly from Context ---
+  const { cart } = useCart();
+  const cartCount = cart ? cart.reduce((acc, item) => acc + item.qty, 0) : 0;
+  // -----------------------------------------------
 
   const handleSearch = (e) => {
     e.preventDefault(); 
@@ -26,10 +30,8 @@ const Navbar = ({ cartCount = 0, user, onLogout }) => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      // Optional: Backend logout call if you implement it later
+      // await fetch(`${API_URL}/auth/logout`, ...);
     } catch (error) {
       console.error("Logout error", error);
     }
@@ -60,7 +62,6 @@ const Navbar = ({ cartCount = 0, user, onLogout }) => {
            </h1>
            <Bell className="w-6 h-6 text-blue-600 -mt-2 -rotate-12" fill="currentColor" />
         </Link>
-        {/* ------------ */}
 
         {/* Desktop Links */}
         <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-700"> 

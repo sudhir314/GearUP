@@ -7,7 +7,7 @@ import { useCart } from '../context/CartContext';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart } = useCart(); // Use Context
+  const { cart } = useCart(); 
   const [loading, setLoading] = useState(true);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(-1);
@@ -22,7 +22,7 @@ const Checkout = () => {
     if (!cart || cart.length === 0) navigate('/shop');
   }, [cart, navigate]);
 
-  // Fetch Saved Addresses
+  // Fetch Saved Addresses using the new /profile route
   useEffect(() => {
     const fetchUserProfile = async () => {
         try {
@@ -31,7 +31,7 @@ const Checkout = () => {
                 setSavedAddresses(res.data.addresses);
             }
         } catch (error) {
-            console.log("Guest checkout");
+            console.log("Guest checkout or error fetching profile");
         } finally {
             setLoading(false);
         }
@@ -56,26 +56,31 @@ const Checkout = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // If "Save this address" is checked, send it to backend
     if (selectedAddressIndex === -1 && saveForLater) {
         try {
+            // Updated route matches auth.js
             await apiClient.post('/auth/save-address', { address: formData });
-            toast.success("Address saved!");
-        } catch (error) { console.error("Failed to save address"); }
+            toast.success("Address saved to profile!");
+        } catch (error) { 
+            console.error("Failed to save address", error);
+            // Don't block checkout if save fails
+        }
     }
 
-    // --- KEY CHANGE: NAVIGATE TO PAYMENT WITH DATA ---
+    // Pass the address data to the Payment page
     navigate('/payment', { state: { shippingAddress: formData } });
   };
 
   if (!cart || cart.length === 0) return null;
 
   return (
-    // ... (Keep your existing UI JSX exactly the same, it was good) ...
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
         <h1 className="text-3xl font-bold mb-8 flex items-center gap-2"><MapPin className="text-green-700" /> Shipping Details</h1>
-        {/* Render Saved Addresses & Form as you had them ... */}
-         {savedAddresses.length > 0 && (
+        
+        {savedAddresses.length > 0 && (
             <div className="mb-8">
                 <h3 className="text-lg font-semibold mb-4 text-gray-700">Saved Addresses</h3>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -92,6 +97,7 @@ const Checkout = () => {
                 </div>
             </div>
         )}
+
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in">
              <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700">Full Name</label><input required name="fullName" value={formData.fullName} onChange={handleChange} type="text" className="mt-1 block w-full px-3 py-2 border rounded-md" /></div>
              <div><label className="block text-sm font-medium text-gray-700">Phone</label><input required name="phone" value={formData.phone} onChange={handleChange} type="tel" className="mt-1 block w-full px-3 py-2 border rounded-md" /></div>
@@ -99,11 +105,19 @@ const Checkout = () => {
              <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700">Address</label><textarea required name="address" value={formData.address} onChange={handleChange} rows="3" className="mt-1 block w-full px-3 py-2 border rounded-md"></textarea></div>
              <div><label className="block text-sm font-medium text-gray-700">City</label><input required name="city" value={formData.city} onChange={handleChange} type="text" className="mt-1 block w-full px-3 py-2 border rounded-md" /></div>
              <div><label className="block text-sm font-medium text-gray-700">Pincode</label><input required name="pincode" value={formData.pincode} onChange={handleChange} type="text" className="mt-1 block w-full px-3 py-2 border rounded-md" /></div>
-             {selectedAddressIndex === -1 && (<div className="md:col-span-2 flex items-center gap-2 mt-2 bg-green-50 p-3 rounded-lg border border-green-100"><input type="checkbox" id="saveAddr" checked={saveForLater} onChange={(e) => setSaveForLater(e.target.checked)} className="w-5 h-5 accent-green-700"/><label htmlFor="saveAddr" className="text-sm font-medium text-gray-700 cursor-pointer">Save this address</label></div>)}
+             
+             {selectedAddressIndex === -1 && (
+                <div className="md:col-span-2 flex items-center gap-2 mt-2 bg-green-50 p-3 rounded-lg border border-green-100">
+                    <input type="checkbox" id="saveAddr" checked={saveForLater} onChange={(e) => setSaveForLater(e.target.checked)} className="w-5 h-5 accent-green-700"/>
+                    <label htmlFor="saveAddr" className="text-sm font-medium text-gray-700 cursor-pointer">Save this address for future orders</label>
+                </div>
+             )}
+             
              <div className="md:col-span-2 mt-4"><button type="submit" className="w-full bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg flex justify-center items-center gap-2">Continue to Payment</button></div>
         </form>
       </div>
     </div>
   );
 };
+
 export default Checkout;
