@@ -200,10 +200,19 @@ router.post('/save-address', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (user) {
-            const newAddress = req.body.address; // Checkout sends { address: formData }
+            // 'address' comes from frontend { address: formData }
+            // We verify the data exists before pushing
+            const newAddress = req.body.address; 
+            
+            if (!newAddress) {
+                return res.status(400).json({ message: "No address data provided" });
+            }
+
             if(!user.addresses) user.addresses = [];
             
             user.addresses.push(newAddress);
+            
+            // This .save() triggers the User.js pre-save hook we just fixed
             await user.save();
             
             res.json({ message: "Address saved", addresses: user.addresses });

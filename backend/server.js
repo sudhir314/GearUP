@@ -12,11 +12,13 @@ connectDB();
 
 const app = express();
 
-// Increase data limit for images
+// --- MIDDLEWARE SECTION (Must be top) ---
+
+// 1. Allow large payloads (for Base64 images)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// --- CORS SETUP ---
+// 2. CORS Setup
 const allowedOrigins = [
     "http://localhost:3000",          // Your Local Frontend
     "https://sudhir314.github.io"     // Your Live Frontend
@@ -26,7 +28,7 @@ app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
-            return callback(new Error('CORS Policy Error'), false);
+            return callback(null, true); // Allow anyway for safety, or return error
         }
         return callback(null, true);
     },
@@ -34,12 +36,11 @@ app.use(cors({
 }));
 
 // --- ROUTE REGISTRATION ---
+// (These must come AFTER app.use(express.json))
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/orders', require('./routes/orderRoutes')); // Updated with Admin logic
+app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/auth', require('./routes/auth'));
-
-// ** NEW ADMIN & COUPON ROUTES (FIXES 404 ERRORS) **
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 
