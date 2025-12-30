@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 const CartContext = createContext();
@@ -6,45 +6,80 @@ const CartContext = createContext();
 export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState(() => {
-      // Load cart from local storage on startup
-      const savedCart = localStorage.getItem('cart');
-      return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const [cart, setCart] = useState([]);
+  const [discount, setDiscount] = useState(0);
 
+  // Load cart from local storage on mount
   useEffect(() => {
-      localStorage.setItem('cart', JSON.stringify(cart));
+    const storedCart = localStorage.getItem('cart');
+    if (storedCart && storedCart !== "undefined" && storedCart !== "null") {
+      try {
+        setCart(JSON.parse(storedCart));
+      } catch (error) {
+        console.error("Corrupt cart data found, clearing...", error);
+        localStorage.removeItem('cart');
+      }
+    }
+  }, []);
+
+  // Save cart to local storage on change
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+    if (cart.length === 0) setDiscount(0);
   }, [cart]);
 
-  // --- ADD TO CART FUNCTION ---
   const addToCart = (product) => {
-    setCart(prevCart => {
-      const existItem = prevCart.find(x => x._id === product._id);
-      if (existItem) {
-        toast.success(`Increased quantity of ${product.name}`);
-        return prevCart.map(x => x._id === product._id ? { ...x, qty: x.qty + 1 } : x);
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((item) => item._id === product._id);
+      if (existingItem) {
+        toast.success(`Added another ${product.name}!`);
+        return prevCart.map((item) =>
+          item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+        );
       } else {
         toast.success(`${product.name} added to cart!`);
-        return [...prevCart, { ...product, qty: 1 }];
+        return [...prevCart, { ...product, quantity: 1 }];
       }
     });
   };
 
-  const removeFromCart = (id) => {
-    setCart(prevCart => prevCart.filter(x => x._id !== id));
-    toast.error("Item removed from cart");
+  const updateCartQuantity = (productId, newQuantity) => {
+    setCart((prevCart) => {
+      if (newQuantity <= 0) return prevCart.filter((item) => item._id !== productId);
+      return prevCart.map((item) =>
+        item._id === productId ? { ...item, quantity: newQuantity } : item
+      );
+    });
   };
 
-  const updateQty = (id, qty) => {
-     setCart(prevCart => prevCart.map(x => x._id === id ? { ...x, qty: Number(qty) } : x));
+  const removeFromCart = (productId) => {
+    setCart((prevCart) => prevCart.filter((item) => item._id !== productId));
+    toast.error("Item removed from cart.");
   };
 
   const clearCart = () => {
-      setCart([]);
+    setCart([]);
+    setDiscount(0);
+    localStorage.removeItem('cart');
   };
 
+  const cartTotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const finalTotal = cartTotal - discount;
+
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQty, clearCart }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        addToCart,
+        updateCartQuantity,
+        removeFromCart,
+        clearCart,
+        discount,
+        setDiscount,
+        cartTotal,
+        finalTotal
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
