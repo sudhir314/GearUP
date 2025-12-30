@@ -18,12 +18,11 @@ const AdminDashboard = () => {
 
   const [formData, setFormData] = useState({
     name: '', price: '', originalPrice: '', category: 'Back Cover', 
-    tag: '', description: '', isAvailable: true, image: '',
+    tag: '', description: '', isAvailable: true, image: '', // Image stores the Base64 string
     brand: '', compatibility: '', color: '', material: ''
   });
   
   const [couponData, setCouponData] = useState({ code: '', discountPercentage: '' });
-  const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => { fetchData(); }, [activeTab]);
@@ -52,39 +51,54 @@ const AdminDashboard = () => {
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
+  // --- FIXED: Convert Image to Base64 String ---
   const handleFileChange = (e) => {
       const file = e.target.files[0];
-      if (file) { setImageFile(file); setImagePreview(URL.createObjectURL(file)); }
+      if (file) {
+          // 1. Show Preview
+          setImagePreview(URL.createObjectURL(file));
+          
+          // 2. Convert to Base64
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onloadend = () => {
+              setFormData(prev => ({ ...prev, image: reader.result }));
+          };
+      }
   };
 
   const handleSubmitProduct = async (e) => {
       e.preventDefault();
-      const data = new FormData();
-      data.append('name', formData.name);
-      data.append('price', formData.price);
-      data.append('originalPrice', formData.originalPrice);
-      data.append('category', formData.category);
-      data.append('tag', formData.tag);
-      data.append('description', formData.description);
-      data.append('isAvailable', formData.isAvailable);
-      data.append('brand', formData.brand);
-      data.append('compatibility', formData.compatibility);
-      data.append('color', formData.color);
-      data.append('material', formData.material);
-
-      if (imageFile) data.append('imageFile', imageFile);
-      else data.append('image', formData.image);
+      
+      // --- FIXED: Send JSON instead of FormData ---
+      const productPayload = {
+          name: formData.name,
+          price: Number(formData.price),
+          originalPrice: Number(formData.originalPrice),
+          category: formData.category,
+          tag: formData.tag,
+          description: formData.description,
+          isAvailable: formData.isAvailable,
+          brand: formData.brand,
+          compatibility: formData.compatibility,
+          color: formData.color,
+          material: formData.material,
+          image: formData.image // This is now a Base64 string
+      };
 
       try {
           if (editingProduct) {
-              await apiClient.put(`/products/${editingProduct._id}`, data);
+              await apiClient.put(`/products/${editingProduct._id}`, productPayload);
               toast.success("Product Updated!");
           } else {
-              await apiClient.post('/products', data);
+              await apiClient.post('/products', productPayload);
               toast.success("Product Created!");
           }
           setShowModal(false); setEditingProduct(null); fetchData();
-      } catch (error) { toast.error("Operation failed."); }
+      } catch (error) { 
+          console.error("Product Save Error:", error);
+          toast.error(error.response?.data?.message || "Operation failed."); 
+      }
   };
 
   const handleDeleteProduct = async (id) => {
@@ -124,14 +138,12 @@ const AdminDashboard = () => {
       
       {/* Mobile Header */}
       <div className="md:hidden bg-gray-900 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
-          {/* --- UPDATED LOGO (MOBILE ADMIN) --- */}
           <h2 className="flex items-center gap-1">
              <span className="text-logo" style={{fontSize: '1.5rem', color: 'white'}}>
                Gear <span style={{color: '#60A5FA'}}>UP</span>
              </span>
              <span className="text-gray-400 text-sm font-bold mt-1 ml-1">Admin</span>
           </h2>
-          {/* ----------------------------------- */}
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-gray-800 rounded-lg">
               {isSidebarOpen ? <X size={24}/> : <Menu size={24}/>}
           </button>
@@ -143,14 +155,12 @@ const AdminDashboard = () => {
           md:translate-x-0 md:static md:block
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* --- UPDATED LOGO (SIDEBAR ADMIN) --- */}
         <div className="mb-8 hidden md:block">
             <h2 className="text-logo" style={{fontSize: '2rem', color: 'white'}}>
                 Gear <span style={{color: '#60A5FA'}}>UP</span>
             </h2>
             <p className="text-gray-500 text-xs font-bold tracking-widest mt-1">ADMIN DASHBOARD</p>
         </div>
-        {/* ------------------------------------ */}
 
         <nav className="space-y-4">
           <button onClick={() => { setActiveTab('analytics'); setIsSidebarOpen(false); }} className={`flex items-center gap-3 w-full p-3 rounded-lg transition ${activeTab === 'analytics' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
@@ -168,16 +178,14 @@ const AdminDashboard = () => {
         </nav>
       </div>
 
-      {/* Overlay */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
 
-      {/* Main Content */}
       <div className="flex-1 p-4 md:p-8 w-full overflow-x-hidden">
          <h1 className="text-2xl md:text-3xl font-bold mb-6 capitalize text-gray-800">{activeTab} Management</h1>
 
          {loading ? <p>Loading...</p> : (
              <>
-                {/* ANALYTICS TAB */}
+                {/* ANALYTICS */}
                 {activeTab === 'analytics' && stats && (
                     <div className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -194,30 +202,27 @@ const AdminDashboard = () => {
                                 <div><p className="text-gray-500 text-sm">Users</p><h3 className="text-2xl font-bold">{stats.usersCount}</h3></div>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                                <h3 className="font-bold text-lg mb-6 text-gray-800">Sales Trend</h3>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={stats.dailySales}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="_id" hide />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Line type="monotone" dataKey="sales" stroke="#2563EB" strokeWidth={3} dot={{r: 4}} />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 className="font-bold text-lg mb-6 text-gray-800">Sales Trend</h3>
+                            <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={stats.dailySales}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="_id" hide />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Line type="monotone" dataKey="sales" stroke="#2563EB" strokeWidth={3} dot={{r: 4}} />
+                                    </LineChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* PRODUCTS TAB */}
+                {/* PRODUCTS */}
                 {activeTab === 'products' && (
                     <div>
-                        <button onClick={() => { setEditingProduct(null); setShowModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold mb-6 flex items-center gap-2 hover:bg-blue-700">
+                        <button onClick={() => { setEditingProduct(null); setFormData({name: '', price: '', originalPrice: '', category: 'Back Cover', tag: '', description: '', isAvailable: true, image: '', brand: '', compatibility: '', color: '', material: ''}); setImagePreview(null); setShowModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold mb-6 flex items-center gap-2 hover:bg-blue-700">
                             <Plus size={20}/> Add Product
                         </button>
                         <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
@@ -244,18 +249,13 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* ORDERS TAB */}
+                {/* ORDERS */}
                 {activeTab === 'orders' && (
                     <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
                         <table className="w-full text-left min-w-[700px]">
                             <thead className="bg-gray-100 border-b">
                                 <tr>
-                                    <th className="p-4">Order ID</th>
-                                    <th className="p-4">Customer</th>
-                                    <th className="p-4">Total</th>
-                                    <th className="p-4">Status</th>
-                                    <th className="p-4">Action</th>
-                                    <th className="p-4">View</th>
+                                    <th className="p-4">Order ID</th><th className="p-4">Customer</th><th className="p-4">Total</th><th className="p-4">Status</th><th className="p-4">Action</th><th className="p-4">View</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -280,7 +280,7 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* COUPONS TAB */}
+                {/* COUPONS */}
                 {activeTab === 'coupons' && (
                     <div className="space-y-8">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-md">
@@ -342,8 +342,11 @@ const AdminDashboard = () => {
                         <input type="checkbox" name="isAvailable" checked={formData.isAvailable} onChange={handleInputChange} id="stock" />
                         <label htmlFor="stock">In Stock</label>
                     </div>
-                    <input type="file" onChange={handleFileChange} className="w-full border p-2 rounded" />
+                    
+                    {/* --- FIXED: Image Input --- */}
+                    <input type="file" accept="image/*" onChange={handleFileChange} className="w-full border p-2 rounded" />
                     {imagePreview && <img src={imagePreview} alt="Preview" className="h-20 object-cover rounded" />}
+                    
                     <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Save Product</button>
                 </form>
             </div>

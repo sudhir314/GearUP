@@ -16,33 +16,32 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// --- CRITICAL FIX: CORS SETUP ---
-// We explicitly define which websites are allowed.
-// We DO NOT use '*' because credentials (cookies/tokens) are being sent.
+// --- CORS SETUP ---
 const allowedOrigins = [
-    "http://localhost:3000",              // Your Local Frontend
-    "https://sudhir314.github.io"         // Your Live Frontend
+    "http://localhost:3000",          // Your Local Frontend
+    "https://sudhir314.github.io"     // Your Live Frontend
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
         if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+            return callback(new Error('CORS Policy Error'), false);
         }
         return callback(null, true);
     },
-    credentials: true // Allow cookies/authorization headers
+    credentials: true
 }));
 
-// Routes
+// --- ROUTE REGISTRATION ---
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes')); // Updated with Admin logic
 app.use('/api/auth', require('./routes/auth'));
+
+// ** NEW ADMIN & COUPON ROUTES (FIXES 404 ERRORS) **
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/coupons', require('./routes/couponRoutes'));
 
 // Basic Route
 app.get('/', (req, res) => {

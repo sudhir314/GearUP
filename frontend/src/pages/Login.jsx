@@ -21,8 +21,8 @@ const Login = ({ onLogin }) => {
   };
 
   const validatePasswordStrength = (password) => {
-    const strongPasswordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
-    return strongPasswordRegex.test(password);
+    // Simple validation: 6+ chars
+    return password.length >= 6;
   };
 
   const handleResendOTP = async () => {
@@ -39,14 +39,20 @@ const Login = ({ onLogin }) => {
 
     try {
         if (isLogin) {
+            // --- LOGIN LOGIC ---
             if(!formData.email || !formData.password) throw new Error("Please fill in all fields");
+            
+            // Backend returns: { _id, name, email, token, isAdmin }
             const { data } = await apiClient.post('/auth/login', {
-                email: formData.email.toLowerCase().trim(), password: formData.password
+                email: formData.email.toLowerCase().trim(), 
+                password: formData.password
             });
+            
             handleAuthSuccess(data, "Welcome back!");
             return;
         }
 
+        // --- REGISTRATION LOGIC ---
         if (regStep === 1) {
             if(!formData.name || !formData.email) throw new Error("Name and Email required");
             await apiClient.post('/auth/register-init', {
@@ -69,7 +75,7 @@ const Login = ({ onLogin }) => {
                 setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
                 throw new Error("Passwords do not match!");
             }
-            if (!validatePasswordStrength(formData.password)) throw new Error("Password is weak! Use 8+ chars with letters & numbers.");
+            if (!validatePasswordStrength(formData.password)) throw new Error("Password must be at least 6 characters.");
 
             const { data } = await apiClient.post('/auth/register-finalize', {
                 email: formData.email.toLowerCase().trim(), otp: formData.otp.trim(), password: formData.password
@@ -78,35 +84,47 @@ const Login = ({ onLogin }) => {
         }
 
     } catch (error) {
+        console.error("Auth Error:", error);
         const serverMessage = error.response?.data?.message;
+        
         if (isLogin || regStep === 1) {
-            setAuthError(serverMessage || "An error occurred. Please try again.");
-            if (isLogin) setFormData(prev => ({ ...prev, email: '', password: '' }));
+            setAuthError(serverMessage || "Authentication failed. Please check your details.");
+            if (isLogin) setFormData(prev => ({ ...prev, password: '' })); // Only clear password
         } else {
             toast.error(serverMessage || error.message || "Something went wrong");
         }
     } finally { setLoading(false); }
   };
 
+  // --- CRITICAL FIX: MATCHING BACKEND DATA STRUCTURE ---
   const handleAuthSuccess = (data, message) => {
-      localStorage.setItem('token', data.accessToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      if (onLogin) onLogin(data.user);
-      toast.success(message);
-      navigate('/');
+      // 1. Backend sends 'token', NOT 'accessToken'
+      if (data.token) {
+          localStorage.setItem('token', data.token);
+          
+          // 2. The 'data' object itself IS the user object (it has name, email, etc.)
+          // We do not need to look for data.user
+          localStorage.setItem('user', JSON.stringify(data));
+          
+          // 3. Update App State
+          if (onLogin) onLogin(data);
+          
+          toast.success(message);
+          navigate('/');
+      } else {
+          setAuthError("Login successful but no token received from server.");
+      }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
         
-        {/* --- ADDED BRAND LOGO HERE --- */}
         <div className="flex justify-center mb-2">
             <h1 className="text-logo" style={{fontSize: '2.5rem'}}>
                 Gear <span>UP</span>
             </h1>
         </div>
-        {/* ----------------------------- */}
 
         <div className="text-center">
           <h2 className="text-2xl font-extrabold text-gray-900">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
