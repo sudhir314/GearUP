@@ -5,7 +5,7 @@ const Otp = require('../models/Otp');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const sendOtpEmail = require('../utils/sendEmail');
-const { protect } = require('../middleware/authMiddleware'); // Import protect for secure routes
+const { protect } = require('../middleware/authMiddleware'); 
 
 // Helper: Generate Token
 const generateToken = (id) => {
@@ -23,7 +23,10 @@ const generateOTP = () => {
 
 // 1. REGISTER INIT
 router.post('/register-init', async (req, res) => {
-  const { name, email } = req.body;
+  const { name } = req.body;
+  // FIX: Convert email to lowercase immediately
+  const email = req.body.email ? req.body.email.toLowerCase() : null;
+
   if (!name || !email) return res.status(400).json({ message: "Name and Email are required" });
 
   try {
@@ -49,7 +52,10 @@ router.post('/register-init', async (req, res) => {
 
 // 2. VERIFY OTP
 router.post('/verify-otp', async (req, res) => {
-  const { email, otp } = req.body;
+  // FIX: Convert to lowercase
+  const email = req.body.email ? req.body.email.toLowerCase() : null;
+  const { otp } = req.body;
+
   try {
     const record = await Otp.findOne({ email });
     if (!record) return res.status(400).json({ message: "OTP expired or not found." });
@@ -62,14 +68,17 @@ router.post('/verify-otp', async (req, res) => {
 
 // 3. REGISTER FINALIZE
 router.post('/register-finalize', async (req, res) => {
-  const { email, otp, password } = req.body;
+  // FIX: Convert to lowercase
+  const email = req.body.email ? req.body.email.toLowerCase() : null;
+  const { otp, password } = req.body;
+
   try {
     const record = await Otp.findOne({ email });
     if (!record || record.otp !== otp) return res.status(400).json({ message: "Invalid session or OTP" });
 
     const user = await User.create({
       name: record.name,
-      email: record.email,
+      email: record.email, // This is already lowercase from the OTP record
       password: password
     });
     await Otp.deleteOne({ email });
@@ -92,7 +101,10 @@ router.post('/register-finalize', async (req, res) => {
 
 // 4. LOGIN
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  // FIX: Convert to lowercase
+  const email = req.body.email ? req.body.email.toLowerCase() : null;
+  const { password } = req.body;
+
   try {
     const user = await User.findOne({ email });
     if (user && (await user.matchPassword(password))) {
@@ -117,7 +129,9 @@ router.post('/login', async (req, res) => {
 
 // 5. SEND RESET OTP
 router.post('/forgot-password', async (req, res) => {
-  const { email } = req.body;
+  // FIX: Convert to lowercase
+  const email = req.body.email ? req.body.email.toLowerCase() : null;
+
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -140,7 +154,10 @@ router.post('/forgot-password', async (req, res) => {
 
 // 6. VERIFY FORGOT OTP
 router.post('/verify-forgot-otp', async (req, res) => {
-    const { email, otp } = req.body;
+    // FIX: Convert to lowercase
+    const email = req.body.email ? req.body.email.toLowerCase() : null;
+    const { otp } = req.body;
+
     try {
         const record = await Otp.findOne({ email });
         if (!record || record.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
@@ -152,7 +169,10 @@ router.post('/verify-forgot-otp', async (req, res) => {
 
 // 7. RESET PASSWORD
 router.post('/reset-password', async (req, res) => {
-  const { email, otp, password } = req.body;
+  // FIX: Convert to lowercase
+  const email = req.body.email ? req.body.email.toLowerCase() : null;
+  const { otp, password } = req.body;
+
   try {
     const record = await Otp.findOne({ email });
     if (!record || record.otp !== otp) return res.status(400).json({ message: "Invalid Session" });
@@ -172,10 +192,10 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // ==================================================================
-// SECTION C: USER PROFILE & ADDRESS (NEW - FIXES CHECKOUT)
+// SECTION C: USER PROFILE & ADDRESS
 // ==================================================================
 
-// 8. GET PROFILE (Used in Checkout)
+// 8. GET PROFILE
 router.get('/profile', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user._id).select('-password');
@@ -200,7 +220,7 @@ router.post('/save-address', protect, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (user) {
-            const newAddress = req.body.address; // Checkout sends { address: formData }
+            const newAddress = req.body.address; 
             if(!user.addresses) user.addresses = [];
             
             user.addresses.push(newAddress);
