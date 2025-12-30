@@ -1,95 +1,103 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'; // Changed Router to BrowserRouter
-import { Toaster } from 'react-hot-toast';
-
-// Providers
-import { CartProvider } from './context/CartContext';
-
-// Components
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-
-// Pages
 import Home from './pages/Home';
 import Shop from './pages/Shop';
-import Ingredients from './pages/Ingredients';
-import Login from './pages/Login';
-import ForgotPassword from './pages/ForgotPassword';
+import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
+import Login from './pages/Login';
 import Payment from './pages/Payment';
-import BlogDetail from './pages/BlogDetail';
 import AdminDashboard from './pages/AdminDashboard';
 import UserProfile from './pages/UserProfile';
-import ProductDetails from './pages/ProductDetails';
-
-import './App.css';
+import Ingredients from './pages/Ingredients';
+import BlogDetail from './pages/BlogDetail';
+import ForgotPassword from './pages/ForgotPassword';
+import Footer from './components/Footer';
+import { CartProvider } from './context/CartContext';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const [user, setUser] = useState(null);
 
+  // --- FIX: Restore User from LocalStorage on App Load ---
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
+    const storedToken = localStorage.getItem('token');
+
+    if (storedUser && storedToken) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.error("Corrupt user data found, clearing...", error);
+        console.error("Failed to parse user data:", error);
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
       }
     }
   }, []);
+  // -------------------------------------------------------
 
+  // Login Handler
   const handleLogin = (userData) => {
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(userData)); // Ensure it's saved
+    // Token is usually saved in Login.jsx, but good to double check
   };
 
+  // Logout Handler
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    window.location.href = '/'; // Hard refresh to clear any stale state
   };
 
   return (
     <CartProvider>
-      {/* CRITICAL FIX: Added basename="/GearUP" 
-         This tells React Router that the app is hosted at sudhir314.github.io/GearUP
-      */}
-      <BrowserRouter basename="/GearUP">
-        <div className="font-sans antialiased text-gray-900 bg-white min-h-screen flex flex-col">
-          <Toaster position="top-center" />
+      <Router basename="/GearUP">
+        <Toaster position="top-center" />
+        <div className="flex flex-col min-h-screen">
           <Navbar user={user} onLogout={handleLogout} />
-
+          
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/shop" element={<Shop />} />
-              <Route path="/product/:id" element={<ProductDetails />} />
-              
-              {/* Redirect old ingredients path to materials if needed, or keep as is */}
               <Route path="/ingredients" element={<Ingredients />} />
-              <Route path="/materials" element={<Ingredients />} />
-
-              <Route path="/login" element={<Login onLogin={handleLogin} />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/payment" element={<Payment user={user} />} />
-              
               <Route path="/blog/:id" element={<BlogDetail />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/account" element={<UserProfile user={user} />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route path="/cart" element={<Cart />} />
               
-              {/* Fallback route: if URL doesn't match anything, go Home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/login" element={
+                !user ? <Login onLogin={handleLogin} /> : <Navigate to="/" />
+              } />
+              
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+
+              <Route path="/checkout" element={
+                user ? <Checkout user={user} /> : <Navigate to="/login" />
+              } />
+
+              <Route path="/payment" element={
+                user ? <Payment /> : <Navigate to="/login" />
+              } />
+              
+              <Route path="/profile" element={
+                user ? <UserProfile user={user} /> : <Navigate to="/login" />
+              } />
+
+              {/* Admin Route Protection */}
+              <Route path="/admin" element={
+                user && user.isAdmin ? <AdminDashboard /> : <Navigate to="/" />
+              } />
+
+              <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
 
           <Footer />
         </div>
-      </BrowserRouter>
+      </Router>
     </CartProvider>
   );
 }
