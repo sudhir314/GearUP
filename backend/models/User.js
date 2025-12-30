@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   isAdmin: { type: Boolean, default: false },
-  // Address Field for Checkout
+  // Address Storage
   addresses: [{
        fullName: String,
        phone: String,
@@ -21,13 +21,11 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// --- FIX: Removed 'next' parameter to prevent crash ---
+// --- FIX: Removed 'next' to prevent crash ---
 userSchema.pre('save', async function () {
-  // If password is NOT modified, we return immediately (Exit)
   if (!this.isModified('password')) {
     return;
   }
-  // Otherwise, hash the password
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
