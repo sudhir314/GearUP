@@ -4,7 +4,6 @@ const orderItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
   quantity: { type: Number, required: true },
-  // FIXED: Renamed _id to product to prevent ID collision
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true }, 
 });
 
@@ -23,22 +22,28 @@ const orderSchema = new mongoose.Schema({
     city: { type: String, required: true },
     pincode: { type: String, required: true }
   },
+  // --- NEW FIELD ---
+  paymentMethod: {
+    type: String,
+    required: true,
+    default: 'Online' 
+  },
   totalPrice: {
     type: Number,
     required: true,
     default: 0.0,
   },
+  // --- CHANGED: Default is false now ---
   isPaid: {
     type: Boolean,
-    default: true, 
+    default: false, 
   },
   paidAt: {
     type: Date,
-    default: Date.now,
   },
   status: {
     type: String,
-    default: 'Processing', // Processing, Shipped, Delivered
+    default: 'Processing',
   },
 }, { timestamps: true });
 

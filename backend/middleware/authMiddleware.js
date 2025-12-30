@@ -12,22 +12,25 @@ const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Get user from the token payload ID (REAL DB CHECK)
+      // Get user from the token payload ID
       req.user = await User.findById(decoded.id).select('-password');
       
       if (!req.user) {
+          // FIX: Added return
           return res.status(401).json({ message: 'Not authorized, user not found' });
       }
 
       next();
     } catch (error) {
       console.error('Token verification error:', error.message);
-      res.status(401).json({ message: 'Not authorized, token failed or expired' });
+      // FIX: Added return
+      return res.status(401).json({ message: 'Not authorized, token failed or expired' });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token provided' });
+    // FIX: Added return
+    return res.status(401).json({ message: 'Not authorized, no token provided' });
   }
 };
 
@@ -35,7 +38,8 @@ const admin = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
-    res.status(403).json({ message: 'Not authorized to access this route (Admin only)' });
+    // FIX: Added return
+    return res.status(403).json({ message: 'Not authorized to access this route (Admin only)' });
   }
 };
 

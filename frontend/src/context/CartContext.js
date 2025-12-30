@@ -25,22 +25,29 @@ export const CartProvider = ({ children }) => {
   // Save cart to local storage on change
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
-    if (cart.length === 0) setDiscount(0);
-  }, [cart]);
+    
+    // Ensure discount is reset if cart becomes empty
+    if (cart.length === 0 && discount !== 0) {
+      setDiscount(0);
+    }
+  }, [cart, discount]);
 
+  // --- FIXED: Moved toast OUTSIDE of setCart ---
   const addToCart = (product) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item._id === product._id);
-      if (existingItem) {
-        toast.success(`Added another ${product.name}!`);
-        return prevCart.map((item) =>
+    // Check if item exists using the current cart state
+    const existingItem = cart.find((item) => item._id === product._id);
+
+    if (existingItem) {
+      toast.success(`Added another ${product.name}!`);
+      setCart((prevCart) =>
+        prevCart.map((item) =>
           item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      } else {
-        toast.success(`${product.name} added to cart!`);
-        return [...prevCart, { ...product, quantity: 1 }];
-      }
-    });
+        )
+      );
+    } else {
+      toast.success(`${product.name} added to cart!`);
+      setCart((prevCart) => [...prevCart, { ...product, quantity: 1 }]);
+    }
   };
 
   const updateCartQuantity = (productId, newQuantity) => {
@@ -63,7 +70,7 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem('cart');
   };
 
-  const cartTotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const cartTotal = cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0);
   const finalTotal = cartTotal - discount;
 
   return (

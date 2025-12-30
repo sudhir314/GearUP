@@ -1,12 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Star, Heart, SlidersHorizontal, Loader, X, Smartphone, Package } from 'lucide-react'; // CHANGED: Droplet -> Smartphone
+import { Star, Heart, SlidersHorizontal, Loader, X, Smartphone } from 'lucide-react'; 
 import { Link } from 'react-router-dom'; 
 import toast from 'react-hot-toast';
 import apiClient from '../api/apiClient'; 
 import axios from 'axios'; 
 import '../App.css'; 
+// --- FIX: Import the Hook ---
+import { useCart } from '../context/CartContext';
 
-const Shop = ({ addToCart, addToWishlist }) => {
+const Shop = ({ addToWishlist }) => { // Removed addToCart from props
+  // --- FIX: Get addToCart from Context ---
+  const { addToCart } = useCart();
+  // ---------------------------------------
+
   const [products, setProducts] = useState([]); 
   const [loading, setLoading] = useState(true); 
   const [sortOption, setSortOption] = useState('best-selling');
@@ -78,7 +84,6 @@ const Shop = ({ addToCart, addToWishlist }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
-        {/* CHANGED: Green -> Blue */}
         <Loader className="animate-spin text-blue-600" size={48} />
       </div>
     );
@@ -131,7 +136,6 @@ const Shop = ({ addToCart, addToWishlist }) => {
                     <div className="border-b border-gray-100 pb-6 md:border-none md:pb-0">
                         <h3 className="font-bold mb-4 text-lg text-gray-900">Category</h3>
                         <div className="space-y-3">
-                            {/* CHANGED: Categories from Body Care to Mobile Accessories */}
                             {['All', 'Back Cover', 'Screen Guard', 'Charger', 'Cable', 'Earbuds'].map(cat => (
                                 <label key={cat} className="flex items-center gap-3 cursor-pointer group hover:text-blue-600 transition">
                                     <input 
@@ -207,7 +211,6 @@ const Shop = ({ addToCart, addToWishlist }) => {
                                           <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                                     ) : (
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            {/* CHANGED: Replaced "phitku" text with generic icon */}
                                             <div className="w-20 h-40 bg-white/40 rounded-xl border border-white/50 backdrop-blur-sm shadow-sm flex flex-col items-center justify-center">
                                                 <Smartphone className="text-gray-400 opacity-50" size={32} />
                                             </div>

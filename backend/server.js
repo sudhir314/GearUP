@@ -26,9 +26,13 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
+        
         if (allowedOrigins.indexOf(origin) === -1) {
-            return callback(null, true); // Allow anyway for safety, or return error
+            // FIX: Return an error if the origin is not allowed
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
         }
         return callback(null, true);
     },
@@ -36,7 +40,6 @@ app.use(cors({
 }));
 
 // --- ROUTE REGISTRATION ---
-// (These must come AFTER app.use(express.json))
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));

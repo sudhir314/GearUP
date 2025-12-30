@@ -2,22 +2,19 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Search, User, Menu, X, LogOut, LayoutDashboard, Package, Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useCart } from '../context/CartContext'; // Import Context
+import { useCart } from '../context/CartContext'; 
 
-// UPDATED: Points to local backend or your future GearUp deployment
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'; 
 const BRAND_COLOR = '#2563EB'; 
 
-const Navbar = ({ user, onLogout }) => { // Removed cartCount prop
+const Navbar = ({ user, onLogout }) => { 
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  // --- FIX: Get Cart Data Directly from Context ---
   const { cart } = useCart();
-  const cartCount = cart ? cart.reduce((acc, item) => acc + item.qty, 0) : 0;
-  // -----------------------------------------------
+  const cartCount = cart ? cart.reduce((acc, item) => acc + item.quantity, 0) : 0;
 
   const handleSearch = (e) => {
     e.preventDefault(); 
@@ -30,8 +27,7 @@ const Navbar = ({ user, onLogout }) => { // Removed cartCount prop
 
   const handleLogout = async () => {
     try {
-      // Optional: Backend logout call if you implement it later
-      // await fetch(`${API_URL}/auth/logout`, ...);
+      // Optional logout logic
     } catch (error) {
       console.error("Logout error", error);
     }
@@ -43,19 +39,16 @@ const Navbar = ({ user, onLogout }) => { // Removed cartCount prop
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 transition-all duration-300">
       
-      {/* Announcement Bar */}
       <div className="bg-black text-white text-[10px] md:text-xs py-1.5 px-4 flex justify-center items-center tracking-wide">
         <span className="font-medium text-center truncate">Free Shipping on All Orders Above ₹499 | Use Code: NEWGEAR10</span>
       </div>
 
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         
-        {/* Mobile Menu Button */}
         <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden p-1 text-gray-800">
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* --- LOGO --- */}
         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
            <h1 className="text-logo">
              Gear <span>UP</span>
@@ -63,14 +56,14 @@ const Navbar = ({ user, onLogout }) => { // Removed cartCount prop
            <Bell className="w-6 h-6 text-blue-600 -mt-2 -rotate-12" fill="currentColor" />
         </Link>
 
-        {/* Desktop Links */}
         <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-700"> 
           <Link to="/" className="hover:text-blue-600 transition relative group">Home</Link>
           <Link to="/shop" className="hover:text-blue-600 transition relative group">Shop Now</Link>
           <Link to="/shop" className="hover:text-blue-600 transition relative group">New Arrivals</Link>
           
           {user && (
-             <Link to="/account" className="hover:text-blue-600 transition relative group flex items-center gap-1 text-blue-600 font-bold">
+             // --- FIX: Changed /account to /profile ---
+             <Link to="/profile" className="hover:text-blue-600 transition relative group flex items-center gap-1 text-blue-600 font-bold">
                 My Orders
              </Link>
           )}
@@ -82,7 +75,6 @@ const Navbar = ({ user, onLogout }) => { // Removed cartCount prop
           )}
         </div>
 
-        {/* Icons Section */}
         <div className="flex gap-4 md:gap-5 text-gray-600 items-center">
           <div className="relative flex items-center">
             {showSearch && (
@@ -102,7 +94,8 @@ const Navbar = ({ user, onLogout }) => { // Removed cartCount prop
 
           {user ? (
             <div className="flex items-center gap-3 pl-3 ml-1 border-l border-gray-200">
-                <Link to="/account" className="text-xs font-bold hidden md:block text-blue-600 truncate max-w-[80px] hover:underline">
+                {/* --- FIX: Changed /account to /profile --- */}
+                <Link to="/profile" className="text-xs font-bold hidden md:block text-blue-600 truncate max-w-[80px] hover:underline">
                   Hi, {user.name ? user.name.split(' ')[0] : 'User'}
                 </Link>
                 <button onClick={handleLogout} title="Logout">
@@ -126,13 +119,15 @@ const Navbar = ({ user, onLogout }) => { // Removed cartCount prop
         </div>
       </div>
       
-      {/* Mobile Menu */}
       {isOpen && (
         <div className="lg:hidden bg-white border-t border-gray-100 p-4 flex flex-col gap-3 text-sm font-medium shadow-xl absolute w-full left-0 z-50 animate-in slide-in-from-top-2">
           <Link to="/" onClick={() => setIsOpen(false)} className="py-2 border-b border-gray-50">Home</Link>
           <Link to="/shop" onClick={() => setIsOpen(false)} className="py-2 border-b border-gray-50">Shop Now</Link>
           <Link to="/shop" onClick={() => setIsOpen(false)} className="py-2 border-b border-gray-50">New Arrivals</Link>
-          {user && <Link to="/account" onClick={() => setIsOpen(false)} className="py-2 border-b border-gray-50 text-blue-600 font-bold flex items-center gap-2"><Package size={18} /> My Orders</Link>}
+          
+          {/* --- FIX: Changed /account to /profile --- */}
+          {user && <Link to="/profile" onClick={() => setIsOpen(false)} className="py-2 border-b border-gray-50 text-blue-600 font-bold flex items-center gap-2"><Package size={18} /> My Orders</Link>}
+          
           {user && user.isAdmin && <Link to="/admin" onClick={() => setIsOpen(false)} className="py-2 border-b border-gray-50 text-red-600 font-bold flex gap-2 items-center"><LayoutDashboard size={18}/> Admin Panel</Link>}
           {user ? (
              <div className="flex justify-between items-center py-2 mt-2 bg-gray-50 px-3 rounded-lg">

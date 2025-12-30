@@ -20,7 +20,7 @@ import { Toaster } from 'react-hot-toast';
 function App() {
   const [user, setUser] = useState(null);
 
-  // --- FIX: Restore User from LocalStorage on App Load ---
+  // Restore User from LocalStorage on App Load
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
@@ -35,13 +35,11 @@ function App() {
       }
     }
   }, []);
-  // -------------------------------------------------------
 
   // Login Handler
   const handleLogin = (userData) => {
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData)); // Ensure it's saved
-    // Token is usually saved in Login.jsx, but good to double check
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   // Logout Handler
@@ -49,7 +47,7 @@ function App() {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    window.location.href = '/'; // Hard refresh to clear any stale state
+    window.location.href = '/'; 
   };
 
   return (
@@ -78,15 +76,16 @@ function App() {
                 user ? <Checkout user={user} /> : <Navigate to="/login" />
               } />
 
+              {/* --- FIX APPLIED BELOW: Added user={user} --- */}
               <Route path="/payment" element={
-                user ? <Payment /> : <Navigate to="/login" />
+                user ? <Payment user={user} /> : <Navigate to="/login" />
               } />
+              {/* ------------------------------------------- */}
               
               <Route path="/profile" element={
                 user ? <UserProfile user={user} /> : <Navigate to="/login" />
               } />
 
-              {/* Admin Route Protection */}
               <Route path="/admin" element={
                 user && user.isAdmin ? <AdminDashboard /> : <Navigate to="/" />
               } />

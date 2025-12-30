@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import apiClient from '../api/apiClient';
-import { Star, ShoppingBag, ArrowLeft, Truck, ShieldCheck, Tag, Smartphone } from 'lucide-react'; // CHANGED: Droplet -> Smartphone
+import { Star, ShoppingBag, ArrowLeft, Truck, ShieldCheck, Tag, Smartphone } from 'lucide-react'; 
 import toast from 'react-hot-toast';
 import '../App.css'; 
+// --- FIX: Import the Hook ---
+import { useCart } from '../context/CartContext';
 
-const ProductDetails = ({ addToCart }) => {
+const ProductDetails = () => { // Removed addToCart from props
+  // --- FIX: Get addToCart from Context ---
+  const { addToCart } = useCart();
+  // ---------------------------------------
+
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -44,7 +50,7 @@ const ProductDetails = ({ addToCart }) => {
   const handleAddToCartWithAnimation = (e, prod) => {
       const item = prod || product; // Use passed item or main product
       
-      // Prevent default only if event exists (sometimes we might call from logic)
+      // Prevent default only if event exists
       if(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -137,7 +143,6 @@ const ProductDetails = ({ addToCart }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-8">
-                    {/* CHANGED: Colors and Text to match Tech theme */}
                     <div className="flex items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
                         <Truck size={20} className="text-blue-600"/> <span>Fast Delivery</span>
                     </div>
