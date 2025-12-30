@@ -16,15 +16,12 @@ export const CartProvider = ({ children }) => {
       try {
         const parsedCart = JSON.parse(storedCart);
         
-        // --- DATA MIGRATION FIX START ---
-        // This fixes the error by converting old 'qty' to 'quantity'
+        // --- DATA MIGRATION FIX ---
+        // This converts old 'qty' data to 'quantity' automatically
         const validCart = parsedCart.map(item => ({
             ...item,
-            // If quantity is missing, check for 'qty', otherwise default to 1
             quantity: item.quantity || item.qty || 1 
         }));
-        // --- DATA MIGRATION FIX END ---
-
         setCart(validCart);
       } catch (error) {
         console.error("Corrupt cart data found, clearing...", error);
@@ -44,27 +41,23 @@ export const CartProvider = ({ children }) => {
     }
   }, [cart, discount]);
 
-  // Use useCallback to prevent re-renders
+  // --- FIXED: Toast logic moved outside of setCart ---
   const addToCart = useCallback((product) => {
-    setCart((prevCart) => {
-      // Check if item exists using the current cart state
-      const existingItem = prevCart.find((item) => item._id === product._id);
-      
-      // Toast must be outside the state setter to be pure, 
-      // but strictly speaking, calling it here works for now. 
-      // For perfect React purity, we'd move this logic, 
-      // but let's keep it simple as it works.
-      if (existingItem) {
-        toast.success(`Added another ${product.name}!`);
-        return prevCart.map((item) =>
+    // Check if item exists using the current 'cart' state directly
+    const existingItem = cart.find((item) => item._id === product._id);
+
+    if (existingItem) {
+      toast.success(`Added another ${product.name}!`);
+      setCart((prevCart) =>
+        prevCart.map((item) =>
           item._id === product._id ? { ...item, quantity: (item.quantity || 1) + 1 } : item
-        );
-      } else {
-        toast.success(`${product.name} added to cart!`);
-        return [...prevCart, { ...product, quantity: 1 }];
-      }
-    });
-  }, []);
+        )
+      );
+    } else {
+      toast.success(`${product.name} added to cart!`);
+      setCart((prevCart) => [...prevCart, { ...product, quantity: 1 }]);
+    }
+  }, [cart]); // Added 'cart' dependency
 
   const updateCartQuantity = useCallback((productId, newQuantity) => {
     setCart((prevCart) => {
