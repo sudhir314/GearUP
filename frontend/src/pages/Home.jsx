@@ -16,22 +16,21 @@ import { useCart } from '../context/CartContext';
 import '../App.css'; 
 
 // --- 1. IMPORT YOUR LOCAL IMAGES HERE ---
-// These are the images you already have in src/assets
 import heroPhoneImg from '../assets/hero-phone.png'; 
 import actionImg from '../assets/action.webp';
-import hero2Img from '../assets/hero2.png';
+// IMPORT THE NEW IMAGE (Make sure it's named sound-and-power.jpg in assets folder)
+import soundAndPowerImg from '../assets/sound-and-power.jpg';
 
 // Blog images
 import blog1Img from '../assets/blog1.webp'; 
 import blog2Img from '../assets/blog2.webp';
 import blog3Img from '../assets/blog3.webp';
 
-// --- 2. UPDATED HERO SLIDES WITH LOCAL IMAGES ---
+// --- 2. UPDATED HERO SLIDES WITH NEW IMAGE ---
 const heroSlides = [
   {
     id: 1,
-    // Using your 'hero-phone.png' for Back Covers
-    image: heroPhoneImg, 
+    image: heroPhoneImg, // Slide 1: Back Covers
     tag: "BEST SELLER",
     title: "Style Meets Protection",
     subtitle: "Discover ultra-slim, shockproof back covers designed to keep your phone safe without hiding its beauty.",
@@ -41,8 +40,7 @@ const heroSlides = [
   },
   {
     id: 2,
-    // Using your 'action.webp' for Glass Guards
-    image: actionImg, 
+    image: actionImg, // Slide 2: Glass Guard
     tag: "ULTIMATE CLARITY",
     title: "The Invisible Shield",
     subtitle: "9H Hardness Tempered Glass. Scratch-resistant, shatter-proof, and smooth to the touch.",
@@ -52,8 +50,9 @@ const heroSlides = [
   },
   {
     id: 3,
-    // Using 'hero2.png' for Essentials/Chargers
-    image: hero2Img, 
+    // --- UPDATE THIS LINE ---
+    image: soundAndPowerImg, // Slide 3: NEW Sound & Power Image
+    // ------------------------
     tag: "DAILY ESSENTIALS",
     title: "Power & Sound",
     subtitle: "High-speed charging cables and immersive earbuds. Gear up for your daily grind.",
@@ -93,7 +92,6 @@ const Home = () => {
     const fetchProducts = async () => {
       try {
         const res = await apiClient.get('/products');
-        // Safety check to ensure products is always an array
         const productData = res.data && Array.isArray(res.data) ? res.data : [];
         setProducts(productData.slice(0, 4)); 
       } catch (err) {
@@ -126,9 +124,7 @@ const Home = () => {
             {heroSlides.map((slide) => (
                 <SwiperSlide key={slide.id} className="relative overflow-hidden">
                     
-                    {/* FIX: Using a real <img> tag here. 
-                       This guarantees the image loads from your local files.
-                    */}
+                    {/* BACKGROUND IMAGE CONTAINER */}
                     <div 
                         className="absolute inset-0 w-full h-full"
                         data-swiper-parallax="50%" 
