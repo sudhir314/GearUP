@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/GearUP/static/css/main.fa7034bc.css",
-    "main.js": "/GearUP/static/js/main.47eb81ac.js",
+    "main.css": "/GearUP/static/css/main.dcf82980.css",
+    "main.js": "/GearUP/static/js/main.e7a63331.js",
     "static/js/453.8701dc61.chunk.js": "/GearUP/static/js/453.8701dc61.chunk.js",
     "static/media/hero2.png": "/GearUP/static/media/hero2.ebd6e758182c8ca6e0c9.png",
     "static/media/hero-phone.png": "/GearUP/static/media/hero-phone.b441bab7d0143dba2fd1.png",
@@ -11,12 +11,12 @@
     "static/media/payment-qr.jpg": "/GearUP/static/media/payment-qr.6d794cdb4d0f59ed3819.jpg",
     "static/media/blog3.webp": "/GearUP/static/media/blog3.65f2d905c857fbb61f7f.webp",
     "index.html": "/GearUP/index.html",
-    "main.fa7034bc.css.map": "/GearUP/static/css/main.fa7034bc.css.map",
-    "main.47eb81ac.js.map": "/GearUP/static/js/main.47eb81ac.js.map",
+    "main.dcf82980.css.map": "/GearUP/static/css/main.dcf82980.css.map",
+    "main.e7a63331.js.map": "/GearUP/static/js/main.e7a63331.js.map",
     "453.8701dc61.chunk.js.map": "/GearUP/static/js/453.8701dc61.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.fa7034bc.css",
-    "static/js/main.47eb81ac.js"
+    "static/css/main.dcf82980.css",
+    "static/js/main.e7a63331.js"
   ]
 }
