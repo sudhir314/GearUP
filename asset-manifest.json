@@ -1,9 +1,9 @@
 {
   "files": {
     "main.css": "/GearUP/static/css/main.dcf82980.css",
-    "main.js": "/GearUP/static/js/main.335c5d40.js",
+    "main.js": "/GearUP/static/js/main.df8b02b7.js",
     "static/js/453.8701dc61.chunk.js": "/GearUP/static/js/453.8701dc61.chunk.js",
-    "static/media/hero2.png": "/GearUP/static/media/hero2.ebd6e758182c8ca6e0c9.png",
+    "static/media/sound-and-power.jpg": "/GearUP/static/media/sound-and-power.851fc16b3bad5d0c629c.jpg",
     "static/media/hero-phone.png": "/GearUP/static/media/hero-phone.b441bab7d0143dba2fd1.png",
     "static/media/blog1.webp": "/GearUP/static/media/blog1.ecd2e59fcbb3eae6be46.webp",
     "static/media/blog2.webp": "/GearUP/static/media/blog2.7392cc47d1b0fbbb1cdc.webp",
@@ -12,11 +12,11 @@
     "static/media/blog3.webp": "/GearUP/static/media/blog3.65f2d905c857fbb61f7f.webp",
     "index.html": "/GearUP/index.html",
     "main.dcf82980.css.map": "/GearUP/static/css/main.dcf82980.css.map",
-    "main.335c5d40.js.map": "/GearUP/static/js/main.335c5d40.js.map",
+    "main.df8b02b7.js.map": "/GearUP/static/js/main.df8b02b7.js.map",
     "453.8701dc61.chunk.js.map": "/GearUP/static/js/453.8701dc61.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.dcf82980.css",
-    "static/js/main.335c5d40.js"
+    "static/js/main.df8b02b7.js"
   ]
 }
