@@ -4,17 +4,20 @@ const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
   originalPrice: { type: Number },
-  image: { type: String, required: true },
-  category: { type: String, required: true }, // e.g., "Back Cover", "Charger", "Tempered Glass"
   
-  // --- NEW FIELDS FOR MOBILE ACCESSORIES ---
-  brand: { type: String },          // e.g., "Samsung", "Apple", "OnePlus"
-  compatibility: { type: String },  // e.g., "iPhone 15 Pro", "Galaxy S24"
-  color: { type: String },          // e.g., "Matte Black", "Transparent"
-  material: { type: String },       // e.g., "Silicon", "Hard Plastic", "Leather"
+  // --- UPDATED: Support Multiple Images ---
+  image: { type: String }, // Keeps the main image (Backward Compatibility)
+  images: [{ type: String }], // Array to store all images
   // ----------------------------------------
 
-  tag: { type: String }, // e.g., "Best Seller", "New Arrival"
+  category: { type: String, required: true },
+  
+  brand: { type: String },
+  compatibility: { type: String },
+  color: { type: String },
+  material: { type: String },
+
+  tag: { type: String },
   rating: { type: Number, default: 0 },
   reviews: { type: Number, default: 0 },
   description: { type: String },

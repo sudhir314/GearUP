@@ -5,13 +5,10 @@ import toast from 'react-hot-toast';
 import apiClient from '../api/apiClient'; 
 import axios from 'axios'; 
 import '../App.css'; 
-// --- FIX: Import the Hook ---
 import { useCart } from '../context/CartContext';
 
-const Shop = ({ addToWishlist }) => { // Removed addToCart from props
-  // --- FIX: Get addToCart from Context ---
+const Shop = ({ addToWishlist }) => { 
   const { addToCart } = useCart();
-  // ---------------------------------------
 
   const [products, setProducts] = useState([]); 
   const [loading, setLoading] = useState(true); 
@@ -20,7 +17,6 @@ const Shop = ({ addToWishlist }) => { // Removed addToCart from props
   const [priceRange, setPriceRange] = useState('All');
   const [showFilters, setShowFilters] = useState(false); 
   
-  // Animation State
   const [flyingImage, setFlyingImage] = useState(null);
 
   useEffect(() => {
@@ -42,7 +38,6 @@ const Shop = ({ addToWishlist }) => { // Removed addToCart from props
     fetchProducts();
   }, []); 
 
-  // Animation Handler
   const handleAddToCartWithAnimation = (e, product) => {
       e.preventDefault();
       e.stopPropagation(); 
@@ -53,7 +48,10 @@ const Shop = ({ addToWishlist }) => { // Removed addToCart from props
           left: `${rect.left}px`,
       };
 
-      setFlyingImage({ src: product.image, style });
+      // Use the first image for the animation
+      const img = product.images && product.images.length > 0 ? product.images[0] : product.image;
+
+      setFlyingImage({ src: img, style });
       addToCart(product);
       setTimeout(() => setFlyingImage(null), 800);
   };
@@ -207,7 +205,10 @@ const Shop = ({ addToWishlist }) => { // Removed addToCart from props
                                         <Heart size={18} />
                                     </button>
 
-                                    {product.image && product.image.startsWith('http') ? (
+                                    {/* --- UPDATED: Show first image or fallback --- */}
+                                    {product.images && product.images.length > 0 ? (
+                                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
+                                    ) : product.image ? (
                                           <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                                     ) : (
                                         <div className="absolute inset-0 flex items-center justify-center">

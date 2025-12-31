@@ -4,14 +4,10 @@ import apiClient from '../api/apiClient';
 import { Star, ShoppingBag, ArrowLeft, Truck, ShieldCheck, Tag, Smartphone } from 'lucide-react'; 
 import toast from 'react-hot-toast';
 import '../App.css'; 
-// --- FIX: Import the Hook ---
 import { useCart } from '../context/CartContext';
 
-const ProductDetails = () => { // Removed addToCart from props
-  // --- FIX: Get addToCart from Context ---
+const ProductDetails = () => {
   const { addToCart } = useCart();
-  // ---------------------------------------
-
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -19,7 +15,8 @@ const ProductDetails = () => { // Removed addToCart from props
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Animation State
+  // --- NEW: State for selected image in gallery ---
+  const [selectedImage, setSelectedImage] = useState(null);
   const [flyingImage, setFlyingImage] = useState(null);
 
   useEffect(() => {
@@ -29,6 +26,13 @@ const ProductDetails = () => { // Removed addToCart from props
       try {
         const productRes = await apiClient.get(`/products/${id}`);
         setProduct(productRes.data);
+        
+        // Default selected image to first one
+        if(productRes.data.images && productRes.data.images.length > 0) {
+            setSelectedImage(productRes.data.images[0]);
+        } else {
+            setSelectedImage(productRes.data.image);
+        }
 
         const allProductsRes = await apiClient.get('/products');
         const allProducts = allProductsRes.data;
@@ -46,11 +50,8 @@ const ProductDetails = () => { // Removed addToCart from props
     fetchData();
   }, [id, navigate]);
 
-  // Animation Handler
   const handleAddToCartWithAnimation = (e, prod) => {
-      const item = prod || product; // Use passed item or main product
-      
-      // Prevent default only if event exists
+      const item = prod || product;
       if(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -62,7 +63,7 @@ const ProductDetails = () => { // Removed addToCart from props
           left: `${rect.left}px`,
       };
 
-      setFlyingImage({ src: item.image, style });
+      setFlyingImage({ src: selectedImage || item.image, style });
       addToCart(item);
       setTimeout(() => setFlyingImage(null), 800);
   };
@@ -70,16 +71,13 @@ const ProductDetails = () => { // Removed addToCart from props
   if (loading) return <div className="min-h-screen flex justify-center items-center">Loading...</div>;
   if (!product) return null;
 
+  // Use images array if available, else fallback to single image
+  const images = product.images && product.images.length > 0 ? product.images : [product.image].filter(Boolean);
+
   return (
     <div className="min-h-screen bg-white py-12 px-4 relative">
-      {/* Flying Image Element */}
       {flyingImage && (
-          <img 
-            src={flyingImage.src} 
-            alt="" 
-            className="fly-item" 
-            style={flyingImage.style} 
-          />
+          <img src={flyingImage.src} alt="" className="fly-item" style={flyingImage.style} />
       )}
 
       <div className="container mx-auto max-w-6xl">
@@ -88,19 +86,40 @@ const ProductDetails = () => { // Removed addToCart from props
         </button>
 
         <div className="grid md:grid-cols-2 gap-12 items-start mb-20">
-            <div className="bg-gray-50 rounded-3xl overflow-hidden border border-gray-100 shadow-sm relative">
-                {product.tag && (
-                    <span className="absolute top-4 left-4 bg-black text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider z-10">
-                        {product.tag}
-                    </span>
-                )}
-                {product.image ? (
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition duration-700" />
-                ) : (
-                    <div className="h-96 flex items-center justify-center text-gray-400">No Image</div>
+            
+            {/* --- UPDATED IMAGE SECTION --- */}
+            <div className="space-y-4">
+                {/* Main Image */}
+                <div className="bg-gray-50 rounded-3xl overflow-hidden border border-gray-100 shadow-sm relative aspect-square">
+                    {product.tag && (
+                        <span className="absolute top-4 left-4 bg-black text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider z-10">
+                            {product.tag}
+                        </span>
+                    )}
+                    {selectedImage ? (
+                        <img src={selectedImage} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-gray-400">No Image</div>
+                    )}
+                </div>
+
+                {/* Thumbnail Gallery */}
+                {images.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        {images.map((img, idx) => (
+                            <button 
+                                key={idx} 
+                                onClick={() => setSelectedImage(img)}
+                                className={`w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition ${selectedImage === img ? 'border-blue-600' : 'border-transparent'}`}
+                            >
+                                <img src={img} alt="" className="w-full h-full object-cover" />
+                            </button>
+                        ))}
+                    </div>
                 )}
             </div>
 
+            {/* Product Info (Unchanged) */}
             <div className="space-y-6">
                 <div>
                     <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 leading-tight">{product.name}</h1>
@@ -156,7 +175,7 @@ const ProductDetails = () => { // Removed addToCart from props
             </div>
         </div>
 
-        {/* RELATED PRODUCTS */}
+        {/* RELATED PRODUCTS (Updated to use first image) */}
         {relatedProducts.length > 0 && (
             <div className="border-t border-gray-100 pt-16">
                 <h2 className="text-2xl font-bold mb-8 text-gray-900">You Might Also Like</h2>
@@ -169,7 +188,10 @@ const ProductDetails = () => { // Removed addToCart from props
                                         {item.tag}
                                     </span>
                                 )}
-                                {item.image ? (
+                                {/* Check images array then fallback */}
+                                {item.images && item.images.length > 0 ? (
+                                    <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" />
+                                ) : item.image ? (
                                     <img src={item.image} alt={item.name} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center opacity-70">

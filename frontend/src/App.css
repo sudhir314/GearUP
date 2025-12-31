@@ -61,3 +61,77 @@ body {
   animation: flyToCart 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }
+/* --- Add this to the bottom of frontend/src/App.css --- */
+
+@keyframes smoothZoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+.animate-zoom {
+  animation: smoothZoom 4s ease-in-out infinite alternate;
+}
+
+/* Make the phone look 3D */
+.phone-frame-shadow {
+  box-shadow: 
+    0 0 0 12px #1f2937,  /* The Bezel */
+    0 0 0 13px #374151,  /* The Outer Rim */
+    20px 20px 60px rgba(0,0,0,0.4), /* Drop Shadow */
+    inset 0 0 20px rgba(0,0,0,0.5); /* Inner Depth */
+}
+/* --- PREMIUM ANIMATIONS --- */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes smoothZoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+.animate-zoom-slow {
+  animation: smoothZoom 10s ease-in-out infinite alternate;
+}
+
+/* --- REALISTIC 3D PHONE FRAME --- */
+.phone-mockup {
+  position: relative;
+  background: #121212; /* Dark Body */
+  border-radius: 40px;
+  box-shadow: 
+    0 0 0 2px #333,      /* Inner Bezel */
+    0 0 0 6px #1a1a1a,   /* Outer Body */
+    0 20px 50px -10px rgba(0,0,0,0.5), /* Deep Shadow */
+    0 50px 100px -20px rgba(50, 50, 93, 0.4); /* Ambient Shadow */
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* The Notch / Dynamic Island */
+.phone-notch {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 25px;
+  background: black;
+  border-radius: 12px;
+  z-index: 20;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, Plus, Edit, Trash2, X, Menu, TicketPercent, BarChart2, Users, DollarSign, Eye } from 'lucide-react';
+import { Package, Truck, Plus, Edit, Trash2, X, Menu, TicketPercent, BarChart2, Users, DollarSign, Eye, Upload } from 'lucide-react';
 import apiClient from '../api/apiClient';
 import toast from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -18,12 +18,15 @@ const AdminDashboard = () => {
 
   const [formData, setFormData] = useState({
     name: '', price: '', originalPrice: '', category: 'Back Cover', 
-    tag: '', description: '', isAvailable: true, image: '', // Image stores the Base64 string
+    tag: '', description: '', isAvailable: true, 
+    images: [], // Changed from 'image' to 'images' array
     brand: '', compatibility: '', color: '', material: ''
   });
   
   const [couponData, setCouponData] = useState({ code: '', discountPercentage: '' });
-  const [imagePreview, setImagePreview] = useState(null);
+  
+  // We don't strictly need a separate preview state, we can use formData.images
+  // But let's keep it simple.
 
   useEffect(() => { fetchData(); }, [activeTab]);
 
@@ -51,39 +54,39 @@ const AdminDashboard = () => {
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  // --- FIXED: Convert Image to Base64 String ---
-  const handleFileChange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-          // 1. Show Preview
-          setImagePreview(URL.createObjectURL(file));
-          
-          // 2. Convert to Base64
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onloadend = () => {
-              setFormData(prev => ({ ...prev, image: reader.result }));
-          };
+  // --- FIXED: Handle Multiple Files ---
+  const handleFileChange = async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+          const base64Promises = files.map(file => {
+              return new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result);
+                  reader.readAsDataURL(file);
+              });
+          });
+
+          const base64Images = await Promise.all(base64Promises);
+          // Append new images to existing ones
+          setFormData(prev => ({ ...prev, images: [...prev.images, ...base64Images] }));
       }
+  };
+
+  const removeImage = (index) => {
+      setFormData(prev => ({
+          ...prev,
+          images: prev.images.filter((_, i) => i !== index)
+      }));
   };
 
   const handleSubmitProduct = async (e) => {
       e.preventDefault();
       
-      // --- FIXED: Send JSON instead of FormData ---
       const productPayload = {
-          name: formData.name,
+          ...formData,
           price: Number(formData.price),
           originalPrice: Number(formData.originalPrice),
-          category: formData.category,
-          tag: formData.tag,
-          description: formData.description,
-          isAvailable: formData.isAvailable,
-          brand: formData.brand,
-          compatibility: formData.compatibility,
-          color: formData.color,
-          material: formData.material,
-          image: formData.image // This is now a Base64 string
+          // images array is already in formData
       };
 
       try {
@@ -131,6 +134,21 @@ const AdminDashboard = () => {
         toast.success(`Updated to ${newStatus}`);
         fetchData();
     } catch (error) { toast.error("Failed to update status"); }
+  };
+
+  const openEditModal = (product) => {
+      setEditingProduct(product);
+      setFormData({
+          ...product,
+          images: product.images && product.images.length > 0 ? product.images : [product.image].filter(Boolean)
+      });
+      setShowModal(true);
+  };
+
+  const openAddModal = () => {
+      setEditingProduct(null);
+      setFormData({name: '', price: '', originalPrice: '', category: 'Back Cover', tag: '', description: '', isAvailable: true, images: [], brand: '', compatibility: '', color: '', material: ''});
+      setShowModal(true);
   };
 
   return (
@@ -222,7 +240,7 @@ const AdminDashboard = () => {
                 {/* PRODUCTS */}
                 {activeTab === 'products' && (
                     <div>
-                        <button onClick={() => { setEditingProduct(null); setFormData({name: '', price: '', originalPrice: '', category: 'Back Cover', tag: '', description: '', isAvailable: true, image: '', brand: '', compatibility: '', color: '', material: ''}); setImagePreview(null); setShowModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold mb-6 flex items-center gap-2 hover:bg-blue-700">
+                        <button onClick={openAddModal} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold mb-6 flex items-center gap-2 hover:bg-blue-700">
                             <Plus size={20}/> Add Product
                         </button>
                         <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
@@ -233,12 +251,13 @@ const AdminDashboard = () => {
                                 <tbody>
                                     {products.map(p => (
                                         <tr key={p._id} className="border-b hover:bg-gray-50">
-                                            <td className="p-4"><img src={p.image} alt="" className="w-12 h-12 rounded object-cover bg-gray-100"/></td>
+                                            {/* Show first image or fallback */}
+                                            <td className="p-4"><img src={p.images && p.images.length > 0 ? p.images[0] : p.image} alt="" className="w-12 h-12 rounded object-cover bg-gray-100"/></td>
                                             <td className="p-4 font-bold">{p.name}</td>
                                             <td className="p-4 text-sm text-gray-500">{p.category}</td>
                                             <td className="p-4">₹{p.price}</td>
                                             <td className="p-4 flex gap-3">
-                                                <button onClick={() => { setEditingProduct(p); setFormData(p); setImagePreview(p.image); setShowModal(true); }} className="text-blue-600"><Edit size={18}/></button>
+                                                <button onClick={() => openEditModal(p)} className="text-blue-600"><Edit size={18}/></button>
                                                 <button onClick={() => handleDeleteProduct(p._id)} className="text-red-600"><Trash2 size={18}/></button>
                                             </td>
                                         </tr>
@@ -249,7 +268,7 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* ORDERS */}
+                {/* ORDERS & COUPONS SECTIONS (unchanged logic) */}
                 {activeTab === 'orders' && (
                     <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
                         <table className="w-full text-left min-w-[700px]">
@@ -280,7 +299,6 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* COUPONS */}
                 {activeTab === 'coupons' && (
                     <div className="space-y-8">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-md">
@@ -338,14 +356,35 @@ const AdminDashboard = () => {
                     </div>
                     <input name="tag" value={formData.tag} onChange={handleInputChange} placeholder="Tag" className="w-full border p-2 rounded" />
                     <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Description" className="w-full border p-2 rounded h-20"></textarea>
+                    
                     <div className="flex items-center gap-2">
                         <input type="checkbox" name="isAvailable" checked={formData.isAvailable} onChange={handleInputChange} id="stock" />
                         <label htmlFor="stock">In Stock</label>
                     </div>
                     
-                    {/* --- FIXED: Image Input --- */}
-                    <input type="file" accept="image/*" onChange={handleFileChange} className="w-full border p-2 rounded" />
-                    {imagePreview && <img src={imagePreview} alt="Preview" className="h-20 object-cover rounded" />}
+                    {/* --- UPDATED: Multiple Image Upload UI --- */}
+                    <div>
+                        <label className="block text-sm font-bold mb-2">Product Images</label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition relative cursor-pointer">
+                            <input type="file" accept="image/*" multiple onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                            <Upload className="mx-auto text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-500">Click to upload multiple images</p>
+                        </div>
+                        
+                        {/* Image Previews */}
+                        {formData.images && formData.images.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mt-4">
+                                {formData.images.map((img, idx) => (
+                                    <div key={idx} className="relative group aspect-square rounded overflow-hidden bg-gray-100 border">
+                                        <img src={img} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                                        <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
+                                            <X size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     
                     <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Save Product</button>
                 </form>
@@ -353,7 +392,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* VIEW ORDER MODAL */}
+      {/* VIEW ORDER MODAL (unchanged) */}
       {viewingOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] p-6 overflow-y-auto">
