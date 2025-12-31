@@ -1,37 +1,84 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Star, ShieldCheck, Zap, Smartphone, Headphones, BatteryCharging, ShoppingBag } from 'lucide-react';
+
+// --- SWIPER IMPORTS ---
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay, Parallax } from 'swiper/modules';
+
+// --- SWIPER STYLES ---
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+
+import { ArrowRight, ShieldCheck, Zap, Headphones, BatteryCharging, ShoppingBag, ChevronRight } from 'lucide-react';
 import apiClient from '../api/apiClient'; 
 import { useCart } from '../context/CartContext'; 
 import '../App.css'; 
 
-// --- IMAGES ---
-import hero1 from '../assets/hero-phone.png'; 
-import hero2 from '../assets/hero2.png';       
+// --- 1. IMPORT YOUR LOCAL IMAGES HERE ---
+// These are the images you already have in src/assets
+import heroPhoneImg from '../assets/hero-phone.png'; 
+import actionImg from '../assets/action.webp';
+import hero2Img from '../assets/hero2.png';
 
-import actionImg from '../assets/action.webp'; 
+// Blog images
 import blog1Img from '../assets/blog1.webp'; 
 import blog2Img from '../assets/blog2.webp';
 import blog3Img from '../assets/blog3.webp';
 
-const heroImages = [hero1, hero2]; 
+// --- 2. UPDATED HERO SLIDES WITH LOCAL IMAGES ---
+const heroSlides = [
+  {
+    id: 1,
+    // Using your 'hero-phone.png' for Back Covers
+    image: heroPhoneImg, 
+    tag: "BEST SELLER",
+    title: "Style Meets Protection",
+    subtitle: "Discover ultra-slim, shockproof back covers designed to keep your phone safe without hiding its beauty.",
+    buttonText: "Shop Covers",
+    link: "/shop",
+    color: "from-gray-900 to-black"
+  },
+  {
+    id: 2,
+    // Using your 'action.webp' for Glass Guards
+    image: actionImg, 
+    tag: "ULTIMATE CLARITY",
+    title: "The Invisible Shield",
+    subtitle: "9H Hardness Tempered Glass. Scratch-resistant, shatter-proof, and smooth to the touch.",
+    buttonText: "Get Protected",
+    link: "/shop",
+    color: "from-blue-900 to-black"
+  },
+  {
+    id: 3,
+    // Using 'hero2.png' for Essentials/Chargers
+    image: hero2Img, 
+    tag: "DAILY ESSENTIALS",
+    title: "Power & Sound",
+    subtitle: "High-speed charging cables and immersive earbuds. Gear up for your daily grind.",
+    buttonText: "Shop Accessories",
+    link: "/shop",
+    color: "from-purple-900 to-black"
+  }
+];
 
 const blogs = [
     { 
         id: 1,
-        title: "Which Screen Protector is Best for iPhone 15?", 
+        title: "Which Screen Protector is Best?", 
         summary: "Tempered glass vs. Hydrogel vs. Matte. We break down the differences...",
         image: blog1Img 
     },
     { 
         id: 2,
-        title: "Does Fast Charging Damage Your Battery?", 
+        title: "Does Fast Charging Damage Battery?", 
         summary: "It's the most common myth in the tech world. Let's dive into the science...",
         image: blog2Img
     },
     { 
         id: 3,
-        title: "Top 5 Rugged Cases for Outdoor Adventures", 
+        title: "Top 5 Rugged Cases for Travel", 
         summary: "Heading for a trek? Don't let a drop ruin your trip...",
         image: blog3Img
     }
@@ -41,256 +88,246 @@ const Home = () => {
   const navigate = useNavigate(); 
   const { addToCart } = useCart(); 
   const [products, setProducts] = useState([]);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  // Slideshow Logic
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => 
-        prevIndex === heroImages.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 4000); // Slower interval for better viewing
-
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await apiClient.get('/products');
-        setProducts(res.data.slice(0, 4)); 
+        // Safety check to ensure products is always an array
+        const productData = res.data && Array.isArray(res.data) ? res.data : [];
+        setProducts(productData.slice(0, 4)); 
       } catch (err) {
         console.error("Failed to load home products", err);
+        setProducts([]); 
       }
     };
     fetchProducts();
   }, []);
 
   return (
-    <div className="w-full overflow-x-hidden font-sans">
+    <div className="w-full overflow-x-hidden font-sans bg-gray-50">
       
-      {/* 1. HERO BANNER */}
-      <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 relative py-12 md:py-24 overflow-hidden">
-        <div className="container mx-auto px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-12">
-            
-            {/* TEXT SECTION */}
-            <div className="md:w-1/2 max-w-xl text-center md:text-left z-10 animate-in slide-in-from-left duration-700">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-wider mb-4">
-                    <Star size={12} fill="currentColor" /> Premium Protection
-                </div>
-                <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight text-gray-900 tracking-tight">
-                  Upgrade Your <br/>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                    Mobile Gear.
-                  </span>
-                </h1>
-                <p className="text-lg text-gray-600 mb-8 font-medium leading-relaxed max-w-md mx-auto md:mx-0">
-                  Shop the trendiest back covers, ultra-tough screen guards, and high-speed chargers. 
-                </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
-                    <Link to="/shop">
-                        <button className="bg-black text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition transform hover:-translate-y-1 shadow-xl flex items-center gap-3">
-                            Shop Now <ArrowRight size={20} />
-                        </button>
-                    </Link>
-                    <Link to="/shop">
-                        <button className="px-8 py-4 rounded-full font-bold text-lg text-gray-600 border border-gray-300 hover:bg-white hover:border-gray-400 transition">
-                            View Collections
-                        </button>
-                    </Link>
-                </div>
-            </div>
-
-            {/* --- PHONE FRAME SECTION (FIXED) --- */}
-            <div className="md:w-1/2 relative flex justify-center items-center w-full z-10">
-                
-                {/* Glow Effect Behind */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-blue-400/20 rounded-full blur-[80px] -z-10"></div>
-
-                {/* THE PHONE CONTAINER */}
-                {/* We removed the manual borders and used the CSS class 'phone-frame-shadow' for a cleaner look */}
-                <div className="phone-frame-shadow relative bg-black rounded-[3rem] h-[600px] w-[300px] overflow-hidden transform transition duration-500 hover:scale-[1.02]">
+      {/* =========================================
+          1. HERO SECTION (Using Local <img> Tags)
+         ========================================= */}
+      <section className="relative w-full h-[85vh] min-h-[600px] overflow-hidden bg-black">
+        <Swiper
+            modules={[Navigation, Pagination, Autoplay, Parallax]}
+            speed={1000} 
+            parallax={true} 
+            spaceBetween={0}
+            slidesPerView={1}
+            navigation={true}
+            pagination={{ clickable: true }}
+            autoplay={{ delay: 6000, disableOnInteraction: false }}
+            loop={true}
+            className="w-full h-full"
+        >
+            {heroSlides.map((slide) => (
+                <SwiperSlide key={slide.id} className="relative overflow-hidden">
                     
-                    {/* Dynamic Island / Notch */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[28px] w-[100px] bg-black z-20 rounded-b-2xl"></div>
-                    
-                    {/* Screen Area */}
-                    <div className="w-full h-full bg-gray-800 relative overflow-hidden rounded-[2.5rem]">
-                        {heroImages.map((img, index) => (
-                            <div 
-                                key={index}
-                                className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${index === currentImageIndex ? 'opacity-100' : 'opacity-0'}`}
-                            >
-                                {/* APPLYING THE NEW ZOOM ANIMATION HERE */}
-                                <img 
-                                    src={img} 
-                                    alt={`Slide ${index}`} 
-                                    className={`w-full h-full object-cover ${index === currentImageIndex ? 'animate-zoom' : ''}`}
-                                />
-                                
-                                {/* Dark Gradient Overlay (Makes white text readable if image is bright) */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                                
-                                {/* Optional: Text Overlay on Phone */}
-                                <div className="absolute bottom-8 left-0 right-0 text-center text-white px-4">
-                                    <p className="font-bold text-lg drop-shadow-md">New Arrivals</p>
-                                    <p className="text-xs text-gray-200">Winter Collection 2025</p>
-                                </div>
-                            </div>
-                        ))}
+                    {/* FIX: Using a real <img> tag here. 
+                       This guarantees the image loads from your local files.
+                    */}
+                    <div 
+                        className="absolute inset-0 w-full h-full"
+                        data-swiper-parallax="50%" 
+                    >
+                         <img 
+                            src={slide.image} 
+                            alt={slide.title}
+                            className="w-full h-full object-cover"
+                         />
+                         
+                         {/* Dark Overlay for text readability */}
+                         <div className={`absolute inset-0 bg-gradient-to-r ${slide.color} opacity-40 mix-blend-multiply`}></div>
+                         <div className="absolute inset-0 bg-black/30"></div>
                     </div>
+
+                    {/* CONTENT CONTAINER */}
+                    <div className="relative z-10 h-full container mx-auto px-6 md:px-12 flex items-center">
+                        
+                        {/* GLASS CARD TEXT BOX */}
+                        <div 
+                            className="max-w-3xl p-8 md:p-12 rounded-3xl bg-black/30 backdrop-blur-md border border-white/10 shadow-2xl" 
+                            data-swiper-parallax="-300"
+                        > 
+                            {/* Tag */}
+                            <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full border border-white/20 bg-black/20 text-white/90 text-xs font-bold tracking-[0.2em] uppercase">
+                                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                {slide.tag}
+                            </div>
+
+                            {/* Title */}
+                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-[0.9] tracking-tight drop-shadow-lg">
+                                {slide.title}
+                            </h1>
+
+                            {/* Subtitle */}
+                            <div className="mb-10 max-w-lg">
+                                <p className="text-lg md:text-xl text-gray-100 font-light leading-relaxed drop-shadow-md">
+                                    {slide.subtitle}
+                                </p>
+                            </div>
+
+                            {/* Button */}
+                            <Link to={slide.link}>
+                                <button className="group relative px-8 py-4 bg-white text-black font-bold text-lg rounded-full overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                                    <span className="relative flex items-center gap-3 z-10">
+                                        {slide.buttonText} 
+                                        <ArrowRight size={18} />
+                                    </span>
+                                </button>
+                            </Link>
+                        </div>
+
+                    </div>
+                </SwiperSlide>
+            ))}
+        </Swiper>
+      </section>
+
+      {/* =========================================
+          2. TRUST STRIP
+         ========================================= */}
+      <div className="relative z-20 -mt-8 container mx-auto px-4">
+        <div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl py-8 px-6 md:px-12 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="flex flex-col items-center justify-center text-center gap-2">
+                <ShieldCheck className="text-blue-600 mb-1" size={32} /> 
+                <div>
+                    <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Tough Protection</h4>
+                    <p className="text-xs text-gray-500">Tested for daily drops</p>
                 </div>
             </div>
-            {/* ----------------------------------- */}
-
+            <div className="flex flex-col items-center justify-center text-center gap-2">
+                <Zap className="text-blue-600 mb-1" size={32} /> 
+                <div>
+                    <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Fast Charging</h4>
+                    <p className="text-xs text-gray-500">Speed up your device</p>
+                </div>
+            </div>
+            <div className="flex flex-col items-center justify-center text-center gap-2">
+                <BatteryCharging className="text-blue-600 mb-1" size={32} /> 
+                <div>
+                    <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Premium Quality</h4>
+                    <p className="text-xs text-gray-500">Long-lasting materials</p>
+                </div>
+            </div>
+             <div className="flex flex-col items-center justify-center text-center gap-2">
+                <Headphones className="text-blue-600 mb-1" size={32} /> 
+                <div>
+                    <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Clear Audio</h4>
+                    <p className="text-xs text-gray-500">Immersive sound experience</p>
+                </div>
+            </div>
         </div>
       </div>
 
-      {/* 2. BENEFITS STRIP */}
-      <div className="bg-black text-white py-8 border-t border-gray-800">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-wrap justify-between md:justify-center md:gap-16 gap-y-6 text-center">
-                <div className="flex flex-col items-center gap-2 w-1/2 md:w-auto">
-                    <ShieldCheck className="text-blue-500 mb-1" size={28}/> 
-                    <span className="font-bold text-sm uppercase tracking-wider">Drop Protection</span>
-                </div>
-                <div className="flex flex-col items-center gap-2 w-1/2 md:w-auto">
-                    <BatteryCharging className="text-green-500 mb-1" size={28}/> 
-                    <span className="font-bold text-sm uppercase tracking-wider">Fast Charging</span>
-                </div>
-                <div className="flex flex-col items-center gap-2 w-1/2 md:w-auto">
-                    <Headphones className="text-purple-500 mb-1" size={28}/> 
-                    <span className="font-bold text-sm uppercase tracking-wider">Crystal Audio</span>
-                </div>
-                <div className="flex flex-col items-center gap-2 w-1/2 md:w-auto">
-                    <Zap className="text-yellow-500 mb-1" size={28}/> 
-                    <span className="font-bold text-sm uppercase tracking-wider">Premium Quality</span>
-                </div>
-            </div>
-          </div>
-      </div>
-
-      {/* 3. BEST SELLERS */}
-      <div className="py-16 bg-white">
+      {/* =========================================
+          3. TRENDING PRODUCTS
+         ========================================= */}
+      <div className="py-24 bg-gray-50">
         <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Trending Now</h2>
-                <div className="h-1 w-20 bg-blue-600 mx-auto rounded-full"></div>
-            </div>
-            
-            <div className="w-full max-w-7xl mx-auto">
-                {products.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-                      {products.map(product => (
-                          <Link to={`/product/${product._id}`} key={product._id} className="group cursor-pointer flex flex-col h-full bg-white rounded-2xl p-4 hover:shadow-xl transition border border-gray-100">
-                              <div className={`relative aspect-[4/5] rounded-xl overflow-hidden bg-gray-100 mb-4`}>
-                                  {product.tag && (
-                                    <span className="absolute top-2 left-2 bg-black text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm z-10">
-                                      {product.tag}
-                                    </span>
-                                  )}
-                                  
-                                  {product.image ? (
-                                    <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" />
-                                  ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-70">
-                                        <ShoppingBag size={48} className="text-gray-300" />
-                                    </div>
-                                  )}
-                                  
-                                  <div className="absolute bottom-2 left-2 right-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                                      <button 
-                                        onClick={(e) => { e.preventDefault(); addToCart(product); }} 
-                                        className="w-full bg-black text-white text-xs font-bold py-3 rounded-lg hover:bg-gray-800 transition shadow-lg"
-                                      >
-                                        Add to Cart
-                                      </button>
-                                  </div>
-                              </div>
-                              
-                              <div className="mt-auto">
-                                  <h3 className="font-bold text-gray-900 text-sm md:text-base mb-1 line-clamp-2 leading-tight group-hover:text-blue-600 transition">{product.name}</h3>
-                                  <div className="flex items-center justify-between mt-2">
-                                      <span className="text-gray-900 font-extrabold text-base">₹{product.price}</span>
-                                      {product.originalPrice && (
-                                        <span className="text-gray-400 line-through text-xs">₹{product.originalPrice}</span>
-                                      )}
-                                  </div>
-                              </div>
-                          </Link>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                    <p className="text-gray-500 font-medium">Loading products...</p>
-                  </div>
-                )}
-            </div>
-            
-            <div className="text-center mt-12">
-                <Link to="/shop" className="inline-block px-8 py-3 rounded-full border border-gray-300 font-bold text-gray-700 hover:bg-black hover:text-white hover:border-black transition">
-                    View All Products
+            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+                <div>
+                    <h2 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">Trending Now</h2>
+                    <p className="text-gray-500">The gear everyone is buying this week.</p>
+                </div>
+                <Link to="/shop" className="group flex items-center gap-2 font-bold text-blue-600 hover:text-blue-800 transition">
+                    View All Products <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform"/>
                 </Link>
             </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {products.length > 0 ? (
+                    products.map(product => (
+                        <Link to={`/product/${product._id}`} key={product._id} className="group bg-white rounded-3xl p-3 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100">
+                            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 mb-4">
+                                {product.tag && (
+                                    <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-black text-[10px] font-bold px-3 py-1 rounded-full z-10">
+                                        {product.tag}
+                                    </span>
+                                )}
+                                {product.image ? (
+                                    <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700 ease-out" />
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center text-gray-300"><ShoppingBag size={40}/></div>
+                                )}
+                                <button 
+                                    onClick={(e) => { e.preventDefault(); addToCart(product); }}
+                                    className="absolute bottom-4 right-4 bg-black text-white p-3 rounded-full shadow-lg translate-y-20 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 hover:bg-blue-600"
+                                >
+                                    <ShoppingBag size={18} />
+                                </button>
+                            </div>
+                            <div className="px-2 pb-2">
+                                <h3 className="font-bold text-gray-900 text-base mb-1 truncate">{product.name}</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg font-black text-gray-900">₹{product.price}</span>
+                                    {product.originalPrice && (
+                                        <span className="text-sm text-gray-400 line-through">₹{product.originalPrice}</span>
+                                    )}
+                                </div>
+                            </div>
+                        </Link>
+                    ))
+                ) : (
+                   [1,2,3,4].map(n => <div key={n} className="h-80 bg-gray-200 rounded-3xl animate-pulse"></div>)
+                )}
+            </div>
         </div>
       </div>
 
-      {/* 4. BRAND PROMISE / MISSION */}
-      <div className="py-20 bg-gray-50">
-          <div className="container mx-auto px-4 text-center max-w-3xl">
-              <Star className="w-10 h-10 text-yellow-400 mx-auto mb-6 fill-current" />
-              <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
-              <p className="text-gray-600 text-xl leading-relaxed font-light">
-                  To bring you <span className="text-black font-medium">high-quality, durable, and stylish</span> mobile accessories at unbeatable prices. Your device deserves the best protection without breaking the bank.
-              </p>
-          </div>
-      </div>
-
-      {/* 5. ACTION SECTION */}
-      <div className="bg-white py-12 md:py-24 overflow-hidden">
-          <div className="container mx-auto px-4 flex flex-col md:flex-row items-center gap-10 md:gap-16">
-              <div className="md:w-1/2 z-10 text-center md:text-left">
-                  <h2 className="text-4xl md:text-6xl font-black mb-6 leading-none tracking-tight">
-                    Your Phone. <br/> <span className="text-blue-600">Protected.</span>
-                  </h2>
-                  <p className="text-gray-500 mb-8 text-lg leading-relaxed max-w-md mx-auto md:mx-0">
-                      Discover our new collection of military-grade shockproof cases and ultra-fast 65W chargers.
-                  </p>
-                  <Link to="/shop">
-                      <button className="bg-blue-600 text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-blue-700 transition shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
-                        Shop Collection
-                      </button>
-                  </Link>
-              </div>
-              <div className="md:w-1/2 w-full relative group">
-                   <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                   <div className="relative h-64 md:h-[400px] w-full rounded-2xl overflow-hidden shadow-2xl">
-                       <img src={actionImg} alt="Mobile Action" className="w-full h-full object-cover transform group-hover:scale-105 transition duration-1000" />
-                   </div>
-              </div>
-          </div>
-        </div>
-
-      {/* 6. BLOGS SECTION */}
-      <div className="py-20 bg-white border-t border-gray-100">
+      {/* =========================================
+          4. ACTION SECTION (Using Local actionImg)
+         ========================================= */}
+      <div className="py-24 bg-white overflow-hidden">
           <div className="container mx-auto px-4">
-              <div className="flex justify-between items-end mb-10">
-                  <div>
-                    <h2 className="text-3xl font-bold mb-2">Tech Tips</h2>
-                    <p className="text-gray-500">Latest news & reviews from our experts</p>
-                  </div>
-                  <Link to="/blogs" className="hidden md:block text-blue-600 font-bold hover:underline">Read All Articles</Link>
+            <div className="relative rounded-[3rem] bg-black overflow-hidden shadow-2xl">
+                <div className="absolute inset-0 opacity-40">
+                    <img src={actionImg} alt="Action" className="w-full h-full object-cover" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent"></div>
+                
+                <div className="relative z-10 p-12 md:p-24 max-w-2xl">
+                    <h2 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
+                        Built for the <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Daily Grind.</span>
+                    </h2>
+                    <p className="text-gray-400 text-lg mb-8 leading-relaxed">
+                        Don't let a scratched screen or dead battery ruin your day. GearUp accessories are tested for real life.
+                    </p>
+                    <Link to="/shop">
+                        <button className="bg-white text-black px-10 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition shadow-xl transform hover:-translate-y-1">
+                            Upgrade Now
+                        </button>
+                    </Link>
+                </div>
+            </div>
+          </div>
+      </div>
+
+      {/* =========================================
+          5. BLOGS SECTION
+         ========================================= */}
+      <div className="py-24 bg-gray-50">
+          <div className="container mx-auto px-4">
+              <div className="text-center max-w-2xl mx-auto mb-16">
+                 <h2 className="text-3xl font-bold mb-4">Tech Guides</h2>
+                 <p className="text-gray-500">Tips on keeping your device fresh and battery healthy.</p>
               </div>
               
               <div className="grid md:grid-cols-3 gap-8">
                   {blogs.map((blog) => (
                       <div key={blog.id} onClick={() => navigate(`/blog/${blog.id}`)} className="group cursor-pointer">
-                          <div className="aspect-[16/9] rounded-2xl mb-5 overflow-hidden shadow-sm bg-gray-100 relative">
+                          <div className="aspect-[16/10] rounded-2xl mb-6 overflow-hidden shadow-md bg-gray-200">
                               <img src={blog.image} alt={blog.title} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
-                              <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition"></div>
                           </div>
-                          <h3 className="font-bold text-xl mb-3 group-hover:text-blue-600 transition leading-tight">{blog.title}</h3>
-                          <p className="text-gray-500 line-clamp-2 leading-relaxed">{blog.summary}</p>
+                          <div className="flex items-center gap-2 mb-3">
+                              <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Guide</span>
+                              <span className="text-xs text-gray-400">• 3 min read</span>
+                          </div>
+                          <h3 className="font-bold text-xl mb-3 group-hover:text-blue-600 transition leading-snug">{blog.title}</h3>
+                          <p className="text-gray-500 text-sm line-clamp-2">{blog.summary}</p>
                       </div>
                   ))}
               </div>
