@@ -21,7 +21,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // 2. CORS Setup
 const allowedOrigins = [
     "http://localhost:3000",          // Your Local Frontend
-    "https://sudhir314.github.io"     // Your Live Frontend
+    "https://sudhir314.github.io" ,    // Your Live Frontend
+    "https://www.solvewithsudhir.in", // <--- Add this
+    "https://solvewithsudhir.in" ,      // <--- Add this
 ];
 
 app.use(cors({
