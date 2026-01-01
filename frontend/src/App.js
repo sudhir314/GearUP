@@ -52,7 +52,8 @@ function App() {
 
   return (
     <CartProvider>
-      <Router basename="/GearUP">
+      {/* FIX: Removed basename="/GearUP" so it works on your custom domain */}
+      <Router>
         <Toaster position="top-center" />
         <div className="flex flex-col min-h-screen">
           <Navbar user={user} onLogout={handleLogout} />
@@ -76,11 +77,9 @@ function App() {
                 user ? <Checkout user={user} /> : <Navigate to="/login" />
               } />
 
-              {/* --- FIX APPLIED BELOW: Added user={user} --- */}
               <Route path="/payment" element={
                 user ? <Payment user={user} /> : <Navigate to="/login" />
               } />
-              {/* ------------------------------------------- */}
               
               <Route path="/profile" element={
                 user ? <UserProfile user={user} /> : <Navigate to="/login" />
