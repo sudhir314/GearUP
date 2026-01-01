@@ -120,17 +120,20 @@ const Shop = ({ addToWishlist }) => {
 
         <div className="flex flex-col md:flex-row gap-10 items-start">
             
+            {/* --- FILTER SIDEBAR --- */}
             <aside className={`
-                w-full md:w-64 bg-white z-20
-                ${showFilters ? 'fixed inset-0 p-6 overflow-y-auto' : 'hidden md:block'}
-                md:static md:p-0 md:sticky md:top-24 md:h-fit
+                w-full md:w-64 bg-white z-50
+                ${showFilters ? 'fixed inset-0 p-6 overflow-y-auto flex flex-col' : 'hidden md:block'}
+                md:static md:p-0 md:sticky md:top-24 md:h-fit md:z-20
             `}>
                 <div className="flex justify-between items-center md:hidden mb-6">
                     <span className="font-bold text-xl">Filters</span>
-                    <button onClick={() => setShowFilters(false)}><X size={24}/></button>
+                    <button onClick={() => setShowFilters(false)} className="p-2 bg-gray-100 rounded-full">
+                        <X size={24}/>
+                    </button>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-8 flex-1">
                     <div className="border-b border-gray-100 pb-6 md:border-none md:pb-0">
                         <h3 className="font-bold mb-4 text-lg text-gray-900">Category</h3>
                         <div className="space-y-3">
@@ -175,8 +178,19 @@ const Shop = ({ addToWishlist }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* --- NEW APPLY BUTTON FOR MOBILE --- */}
+                <div className="md:hidden mt-auto pt-6 sticky bottom-0 bg-white border-t border-gray-100">
+                    <button 
+                        onClick={() => setShowFilters(false)}
+                        className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition"
+                    >
+                        Show {filteredProducts.length} Results
+                    </button>
+                </div>
             </aside>
 
+            {/* --- PRODUCT GRID --- */}
             <div className="flex-1 w-full">
                 {filteredProducts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
@@ -205,7 +219,7 @@ const Shop = ({ addToWishlist }) => {
                                         <Heart size={18} />
                                     </button>
 
-                                    {/* --- UPDATED: Show first image or fallback --- */}
+                                    {/* Show first image or fallback */}
                                     {product.images && product.images.length > 0 ? (
                                           <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" />
                                     ) : product.image ? (
