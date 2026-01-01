@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.dcf82980.css",
-    "main.js": "/static/js/main.411b8dd3.js",
+    "main.css": "/static/css/main.aa4013b1.css",
+    "main.js": "/static/js/main.5859e51c.js",
     "static/js/453.8701dc61.chunk.js": "/static/js/453.8701dc61.chunk.js",
     "static/media/sound-and-power.jpg": "/static/media/sound-and-power.851fc16b3bad5d0c629c.jpg",
     "static/media/hero-phone.png": "/static/media/hero-phone.b441bab7d0143dba2fd1.png",
@@ -11,12 +11,12 @@
     "static/media/payment-qr.jpg": "/static/media/payment-qr.6d794cdb4d0f59ed3819.jpg",
     "static/media/blog3.webp": "/static/media/blog3.65f2d905c857fbb61f7f.webp",
     "index.html": "/index.html",
-    "main.dcf82980.css.map": "/static/css/main.dcf82980.css.map",
-    "main.411b8dd3.js.map": "/static/js/main.411b8dd3.js.map",
+    "main.aa4013b1.css.map": "/static/css/main.aa4013b1.css.map",
+    "main.5859e51c.js.map": "/static/js/main.5859e51c.js.map",
     "453.8701dc61.chunk.js.map": "/static/js/453.8701dc61.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.dcf82980.css",
-    "static/js/main.411b8dd3.js"
+    "static/css/main.aa4013b1.css",
+    "static/js/main.5859e51c.js"
   ]
 }
