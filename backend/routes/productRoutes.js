@@ -2,19 +2,39 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const { protect, admin } = require('../middleware/authMiddleware');
-const cloudinary = require('../config/cloudinary');
+const upload = require('../middleware/uploadMiddleware'); // Import the new middleware
 
-// GET ALL PRODUCTS
+// 1. GET ALL PRODUCTS (With Pagination)
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find({});
-    res.json(products);
+    // If "page" is passed, use pagination. Otherwise return all (backward compatibility)
+    if (req.query.page) {
+        const pageSize = Number(req.query.limit) || 10;
+        const page = Number(req.query.page) || 1;
+        
+        const count = await Product.countDocuments({});
+        const products = await Product.find({})
+          .sort({ createdAt: -1 })
+          .limit(pageSize)
+          .skip(pageSize * (page - 1));
+
+        return res.json({ 
+            products, 
+            page, 
+            pages: Math.ceil(count / pageSize),
+            total: count 
+        });
+    } else {
+        // Fallback for parts of the app not using pagination yet
+        const products = await Product.find({}).sort({ createdAt: -1 });
+        return res.json(products);
+    }
   } catch (error) {
     res.status(500).json({ message: 'Error fetching products' });
   }
 });
 
-// GET SINGLE PRODUCT
+// 2. GET SINGLE PRODUCT
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -28,61 +48,35 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// CREATE PRODUCT (Supports Multiple Images)
-router.post('/', protect, admin, async (req, res) => {
+// 3. CREATE PRODUCT (Multipart/Form-Data)
+// Note: 'images' matches the field name in frontend FormData
+router.post('/', protect, admin, upload.array('images', 10), async (req, res) => {
   try {
-    console.log("Create Product Request Received"); 
+    console.log("Create Product Request via Multer"); 
+    
+    // Text fields are in req.body
+    const { name, price, description, category, countInStock, brand, compatibility, color, material, tag, isAvailable, originalPrice } = req.body;
 
-    // Accept 'images' array from frontend
-    const { name, price, description, category, countInStock, images, brand, compatibility, color, material, tag, isAvailable, originalPrice } = req.body;
-
-    if (!name || !price || !category) {
-        return res.status(400).json({ message: 'Please add Name, Price, and Category' });
-    }
-
-    let uploadedImageUrls = [];
-
-    // --- NEW: Upload Multiple Images ---
-    if (images && images.length > 0) {
-      try {
-        console.log(`Uploading ${images.length} images...`);
-        
-        // Upload all images in parallel
-        const uploadPromises = images.map(imgStr => 
-            cloudinary.uploader.upload(imgStr, { folder: 'gearup_products' })
-        );
-        
-        const uploadResults = await Promise.all(uploadPromises);
-        uploadedImageUrls = uploadResults.map(res => res.secure_url);
-        
-        console.log("Images uploaded:", uploadedImageUrls);
-      } catch (uploadError) {
-        console.error("Cloudinary Failed:", uploadError);
-        return res.status(500).json({ 
-            message: 'Image Upload Failed',
-            error: uploadError.message 
-        });
-      }
+    // Image files are uploaded by Multer; URLs are in req.files
+    let imagePaths = [];
+    if (req.files && req.files.length > 0) {
+        imagePaths = req.files.map(file => file.path); // Cloudinary URL
     } else {
-        // Fallback placeholder
-        uploadedImageUrls = ["https://via.placeholder.com/150"];
+        imagePaths = ["https://via.placeholder.com/150"];
     }
 
     const product = new Product({
       user: req.user._id,
       name,
-      price,
-      originalPrice,
+      price: Number(price),
+      originalPrice: Number(originalPrice),
       description,
-      
-      // Save Array AND Main Image (First one)
-      images: uploadedImageUrls,
-      image: uploadedImageUrls[0], 
-      
       category,
       brand, compatibility, color, material, tag,
-      isAvailable,
-      countInStock: countInStock || 0,
+      isAvailable: isAvailable === 'true', // FormData sends booleans as strings
+      countInStock: Number(countInStock) || 0,
+      images: imagePaths,
+      image: imagePaths[0] // Backward compatibility
     });
 
     const createdProduct = await product.save();
@@ -94,13 +88,13 @@ router.post('/', protect, admin, async (req, res) => {
   }
 });
 
-// UPDATE PRODUCT (Also supports multiple images)
-router.put('/:id', protect, admin, async (req, res) => {
+// 4. UPDATE PRODUCT (Multipart/Form-Data)
+router.put('/:id', protect, admin, upload.array('newImages', 10), async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ message: 'Product not found' });
 
-        const { name, price, description, category, images, brand, compatibility, color, material, tag, isAvailable, originalPrice } = req.body;
+        const { name, price, description, category, brand, compatibility, color, material, tag, isAvailable, originalPrice, existingImages } = req.body;
 
         product.name = name || product.name;
         product.price = price || product.price;
@@ -112,35 +106,43 @@ router.put('/:id', protect, admin, async (req, res) => {
         product.color = color || product.color;
         product.material = material || product.material;
         product.tag = tag || product.tag;
-        product.isAvailable = isAvailable !== undefined ? isAvailable : product.isAvailable;
+        
+        if (isAvailable !== undefined) {
+             product.isAvailable = isAvailable === 'true';
+        }
 
-        // Only update images if new ones are provided
-        if (images && images.length > 0) {
-            // Check if these are new Base64 strings or existing URLs
-            // Simple check: if it starts with 'data:', it's new.
-            let newUrls = [];
-            
-            for(let img of images) {
-                if(img.startsWith('data:')) {
-                    const uploadRes = await cloudinary.uploader.upload(img, { folder: 'gearup_products' });
-                    newUrls.push(uploadRes.secure_url);
-                } else {
-                    newUrls.push(img); // Existing URL
-                }
-            }
-            product.images = newUrls;
-            product.image = newUrls[0];
+        // Logic: Combine 'existingImages' (sent as string/array) + 'newImages' (uploaded files)
+        let finalImages = [];
+        
+        // 1. Add existing images kept by user
+        if (existingImages) {
+            // FormData might send a single string or an array of strings
+            const current = Array.isArray(existingImages) ? existingImages : [existingImages];
+            finalImages = [...current];
+        }
+
+        // 2. Add newly uploaded images
+        if (req.files && req.files.length > 0) {
+            const newUrls = req.files.map(file => file.path);
+            finalImages = [...finalImages, ...newUrls];
+        }
+
+        // Only update if we have a valid list, otherwise keep old
+        if (finalImages.length > 0) {
+            product.images = finalImages;
+            product.image = finalImages[0];
         }
 
         const updatedProduct = await product.save();
         res.json(updatedProduct);
 
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Update failed', error: error.message });
     }
 });
 
-// DELETE PRODUCT
+// 5. DELETE PRODUCT
 router.delete('/:id', protect, admin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);

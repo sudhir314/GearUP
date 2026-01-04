@@ -13,7 +13,6 @@ router.post('/', protect, async (req, res) => {
   } 
   
   try {
-    // Calculate Total Price on Backend
     let calculatedTotal = 0;
     const orderItemsWithDetails = [];
 
@@ -22,7 +21,6 @@ router.post('/', protect, async (req, res) => {
         if (productFromDb) {
             const price = productFromDb.price;
             calculatedTotal += price * item.quantity;
-            
             orderItemsWithDetails.push({
                 product: productFromDb._id,
                 name: productFromDb.name,
@@ -32,8 +30,7 @@ router.post('/', protect, async (req, res) => {
         }
     }
 
-    // --- LOGIC FOR COD vs ONLINE ---
-    const isCod = paymentMethod === 'COD'; // Check if user selected COD
+    const isCod = paymentMethod === 'COD';
 
     const order = new Order({
       items: orderItemsWithDetails, 
@@ -41,8 +38,6 @@ router.post('/', protect, async (req, res) => {
       shippingAddress,
       paymentMethod: paymentMethod || 'Online', 
       totalPrice: calculatedTotal,
-      
-      // If COD, isPaid = false. If Online, isPaid = true.
       isPaid: !isCod, 
       paidAt: isCod ? null : Date.now(),
       status: 'Processing'
@@ -67,11 +62,26 @@ router.get('/myorders', protect, async (req, res) => {
   }
 });
 
-// 3. GET ALL ORDERS (Admin Only)
+// 3. GET ALL ORDERS (Admin Only) - UPDATED WITH PAGINATION
 router.get('/all-orders', protect, admin, async (req, res) => {
   try {
-    const orders = await Order.find({}).populate('user', 'id name email').sort({ createdAt: -1 });
-    res.json(orders);
+      const pageSize = Number(req.query.limit) || 10;
+      const page = Number(req.query.page) || 1;
+
+      const count = await Order.countDocuments({});
+      
+      const orders = await Order.find({})
+          .populate('user', 'id name email')
+          .sort({ createdAt: -1 })
+          .limit(pageSize)
+          .skip(pageSize * (page - 1));
+
+      res.json({ 
+          orders, 
+          page, 
+          pages: Math.ceil(count / pageSize),
+          total: count 
+      });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching all orders' });
   }
@@ -85,7 +95,6 @@ router.put('/:id/status', protect, admin, async (req, res) => {
     if (order) {
       order.status = req.body.status || order.status;
       
-      // If Admin marks as Delivered, and it was COD, mark it paid now
       if (req.body.status === 'Delivered') {
           order.isDelivered = true;
           order.deliveredAt = Date.now();

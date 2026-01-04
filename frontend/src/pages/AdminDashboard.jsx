@@ -1,34 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, Plus, Edit, Trash2, X, Menu, TicketPercent, BarChart2, Users, DollarSign, Eye, Upload } from 'lucide-react';
+import { Package, Truck, Plus, Edit, Trash2, X, Menu, TicketPercent, BarChart2, Users, DollarSign, Eye, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import apiClient from '../api/apiClient';
 import toast from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics');
+  
+  // Data States
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [stats, setStats] = useState(null);
+  
+  // Pagination States
+  const [productPage, setProductPage] = useState(1);
+  const [productTotalPages, setProductTotalPages] = useState(1);
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderTotalPages, setOrderTotalPages] = useState(1);
+
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewingOrder, setViewingOrder] = useState(null);
 
+  // Form Data State
   const [formData, setFormData] = useState({
     name: '', price: '', originalPrice: '', category: 'Back Cover', 
     tag: '', description: '', isAvailable: true, 
-    images: [], // Changed from 'image' to 'images' array
+    existingImages: [], // URLs of images already on server
+    newFiles: [],       // File objects for new uploads
     brand: '', compatibility: '', color: '', material: ''
   });
   
   const [couponData, setCouponData] = useState({ code: '', discountPercentage: '' });
-  
-  // We don't strictly need a separate preview state, we can use formData.images
-  // But let's keep it simple.
 
-  useEffect(() => { fetchData(); }, [activeTab]);
+  // Fetch Data on Tab Change or Page Change
+  useEffect(() => { 
+      fetchData(); 
+      // eslint-disable-next-line
+  }, [activeTab, productPage, orderPage]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -37,11 +49,21 @@ const AdminDashboard = () => {
           const res = await apiClient.get('/admin/stats');
           setStats(res.data);
       } else if (activeTab === 'products') {
-        const res = await apiClient.get('/products');
-        setProducts(res.data);
+        const res = await apiClient.get(`/products?page=${productPage}&limit=10`);
+        if (res.data.products) {
+            setProducts(res.data.products);
+            setProductTotalPages(res.data.pages);
+        } else {
+            setProducts(res.data);
+        }
       } else if (activeTab === 'orders') {
-        const res = await apiClient.get('/orders/all-orders');
-        setOrders(res.data);
+        const res = await apiClient.get(`/orders/all-orders?page=${orderPage}&limit=10`);
+        if (res.data.orders) {
+            setOrders(res.data.orders);
+            setOrderTotalPages(res.data.pages);
+        } else {
+            setOrders(res.data);
+        }
       } else if (activeTab === 'coupons') {
         const res = await apiClient.get('/coupons');
         setCoupons(res.data);
@@ -54,47 +76,69 @@ const AdminDashboard = () => {
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  // --- FIXED: Handle Multiple Files ---
-  const handleFileChange = async (e) => {
+  // Handle Multiple File Uploads
+  const handleFileChange = (e) => {
       const files = Array.from(e.target.files);
       if (files.length > 0) {
-          const base64Promises = files.map(file => {
-              return new Promise((resolve) => {
-                  const reader = new FileReader();
-                  reader.onloadend = () => resolve(reader.result);
-                  reader.readAsDataURL(file);
-              });
-          });
-
-          const base64Images = await Promise.all(base64Promises);
-          // Append new images to existing ones
-          setFormData(prev => ({ ...prev, images: [...prev.images, ...base64Images] }));
+          setFormData(prev => ({
+              ...prev,
+              newFiles: [...prev.newFiles, ...files]
+          }));
       }
   };
 
-  const removeImage = (index) => {
+  const removeNewFile = (index) => {
       setFormData(prev => ({
           ...prev,
-          images: prev.images.filter((_, i) => i !== index)
+          newFiles: prev.newFiles.filter((_, i) => i !== index)
+      }));
+  };
+
+  const removeExistingImage = (index) => {
+      setFormData(prev => ({
+          ...prev,
+          existingImages: prev.existingImages.filter((_, i) => i !== index)
       }));
   };
 
   const handleSubmitProduct = async (e) => {
       e.preventDefault();
       
-      const productPayload = {
-          ...formData,
-          price: Number(formData.price),
-          originalPrice: Number(formData.originalPrice),
-          // images array is already in formData
-      };
+      const data = new FormData();
+      data.append('name', formData.name);
+      data.append('price', formData.price);
+      data.append('originalPrice', formData.originalPrice);
+      data.append('category', formData.category);
+      data.append('description', formData.description);
+      data.append('brand', formData.brand);
+      data.append('compatibility', formData.compatibility);
+      data.append('color', formData.color);
+      data.append('material', formData.material);
+      data.append('tag', formData.tag);
+      data.append('isAvailable', formData.isAvailable);
+
+      formData.existingImages.forEach(img => {
+          data.append('existingImages', img);
+      });
 
       try {
           if (editingProduct) {
-              await apiClient.put(`/products/${editingProduct._id}`, productPayload);
+              formData.newFiles.forEach(file => {
+                  data.append('newImages', file);
+              });
+
+              await apiClient.put(`/products/${editingProduct._id}`, data, {
+                  headers: { 'Content-Type': 'multipart/form-data' }
+              });
               toast.success("Product Updated!");
           } else {
-              await apiClient.post('/products', productPayload);
+              formData.newFiles.forEach(file => {
+                  data.append('images', file);
+              });
+
+              await apiClient.post('/products', data, {
+                  headers: { 'Content-Type': 'multipart/form-data' }
+              });
               toast.success("Product Created!");
           }
           setShowModal(false); setEditingProduct(null); fetchData();
@@ -140,16 +184,41 @@ const AdminDashboard = () => {
       setEditingProduct(product);
       setFormData({
           ...product,
-          images: product.images && product.images.length > 0 ? product.images : [product.image].filter(Boolean)
+          existingImages: product.images || (product.image ? [product.image] : []),
+          newFiles: [] 
       });
       setShowModal(true);
   };
 
   const openAddModal = () => {
       setEditingProduct(null);
-      setFormData({name: '', price: '', originalPrice: '', category: 'Back Cover', tag: '', description: '', isAvailable: true, images: [], brand: '', compatibility: '', color: '', material: ''});
+      setFormData({
+          name: '', price: '', originalPrice: '', category: 'Back Cover', tag: '', description: '', isAvailable: true, 
+          existingImages: [], newFiles: [], 
+          brand: '', compatibility: '', color: '', material: ''
+      });
       setShowModal(true);
   };
+
+  const PaginationControls = ({ page, totalPages, setPage }) => (
+      <div className="flex justify-center items-center gap-4 mt-6">
+          <button 
+            disabled={page === 1} 
+            onClick={() => setPage(p => p - 1)}
+            className="p-2 rounded-full bg-white border shadow-sm disabled:opacity-50 hover:bg-gray-50"
+          >
+              <ChevronLeft size={20}/>
+          </button>
+          <span className="text-sm font-bold text-gray-600">Page {page} of {totalPages}</span>
+          <button 
+            disabled={page === totalPages} 
+            onClick={() => setPage(p => p + 1)}
+            className="p-2 rounded-full bg-white border shadow-sm disabled:opacity-50 hover:bg-gray-50"
+          >
+              <ChevronRight size={20}/>
+          </button>
+      </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans">
@@ -157,9 +226,7 @@ const AdminDashboard = () => {
       {/* Mobile Header */}
       <div className="md:hidden bg-gray-900 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
           <h2 className="flex items-center gap-1">
-             <span className="text-logo" style={{fontSize: '1.5rem', color: 'white'}}>
-               Gear <span style={{color: '#60A5FA'}}>UP</span>
-             </span>
+             <span className="text-logo" style={{fontSize: '1.5rem', color: 'white'}}>Gear <span style={{color: '#60A5FA'}}>UP</span></span>
              <span className="text-gray-400 text-sm font-bold mt-1 ml-1">Admin</span>
           </h2>
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-gray-800 rounded-lg">
@@ -174,9 +241,7 @@ const AdminDashboard = () => {
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="mb-8 hidden md:block">
-            <h2 className="text-logo" style={{fontSize: '2rem', color: 'white'}}>
-                Gear <span style={{color: '#60A5FA'}}>UP</span>
-            </h2>
+            <h2 className="text-logo" style={{fontSize: '2rem', color: 'white'}}>Gear <span style={{color: '#60A5FA'}}>UP</span></h2>
             <p className="text-gray-500 text-xs font-bold tracking-widest mt-1">ADMIN DASHBOARD</p>
         </div>
 
@@ -222,8 +287,10 @@ const AdminDashboard = () => {
                         </div>
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                             <h3 className="font-bold text-lg mb-6 text-gray-800">Sales Trend</h3>
-                            <div className="h-64">
-                                <ResponsiveContainer width="100%" height="100%">
+                            {/* --- FIX APPLIED HERE: Added w-full --- */}
+                            <div className="h-64 w-full">
+                                {/* --- FIX APPLIED HERE: Added minWidth={0} --- */}
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                     <LineChart data={stats.dailySales}>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="_id" hide />
@@ -251,7 +318,6 @@ const AdminDashboard = () => {
                                 <tbody>
                                     {products.map(p => (
                                         <tr key={p._id} className="border-b hover:bg-gray-50">
-                                            {/* Show first image or fallback */}
                                             <td className="p-4"><img src={p.images && p.images.length > 0 ? p.images[0] : p.image} alt="" className="w-12 h-12 rounded object-cover bg-gray-100"/></td>
                                             <td className="p-4 font-bold">{p.name}</td>
                                             <td className="p-4 text-sm text-gray-500">{p.category}</td>
@@ -265,40 +331,45 @@ const AdminDashboard = () => {
                                 </tbody>
                             </table>
                         </div>
+                        <PaginationControls page={productPage} totalPages={productTotalPages} setPage={setProductPage} />
                     </div>
                 )}
 
-                {/* ORDERS & COUPONS SECTIONS (unchanged logic) */}
+                {/* ORDERS */}
                 {activeTab === 'orders' && (
-                    <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-                        <table className="w-full text-left min-w-[700px]">
-                            <thead className="bg-gray-100 border-b">
-                                <tr>
-                                    <th className="p-4">Order ID</th><th className="p-4">Customer</th><th className="p-4">Total</th><th className="p-4">Status</th><th className="p-4">Action</th><th className="p-4">View</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {orders.map(order => (
-                                    <tr key={order._id} className="border-b hover:bg-gray-50">
-                                        <td className="p-4 font-mono text-xs text-gray-500">#{order._id.slice(-6)}</td>
-                                        <td className="p-4"><div className="font-bold">{order.shippingAddress?.fullName}</div></td>
-                                        <td className="p-4 font-bold">₹{order.totalPrice}</td>
-                                        <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">{order.status}</span></td>
-                                        <td className="p-4">
-                                            <select className="border rounded px-2 py-1 text-sm" value={order.status} onChange={(e) => updateOrderStatus(order._id, e.target.value)}>
-                                                <option value="Processing">Processing</option><option value="Shipped">Shipped</option><option value="Delivered">Delivered</option><option value="Cancelled">Cancelled</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-4">
-                                            <button onClick={() => setViewingOrder(order)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-full transition"><Eye size={20}/></button>
-                                        </td>
+                    <div>
+                        <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+                            <table className="w-full text-left min-w-[700px]">
+                                <thead className="bg-gray-100 border-b">
+                                    <tr>
+                                        <th className="p-4">Order ID</th><th className="p-4">Customer</th><th className="p-4">Total</th><th className="p-4">Status</th><th className="p-4">Action</th><th className="p-4">View</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {orders.map(order => (
+                                        <tr key={order._id} className="border-b hover:bg-gray-50">
+                                            <td className="p-4 font-mono text-xs text-gray-500">#{order._id.slice(-6)}</td>
+                                            <td className="p-4"><div className="font-bold">{order.shippingAddress?.fullName}</div></td>
+                                            <td className="p-4 font-bold">₹{order.totalPrice}</td>
+                                            <td className="p-4"><span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">{order.status}</span></td>
+                                            <td className="p-4">
+                                                <select className="border rounded px-2 py-1 text-sm" value={order.status} onChange={(e) => updateOrderStatus(order._id, e.target.value)}>
+                                                    <option value="Processing">Processing</option><option value="Shipped">Shipped</option><option value="Delivered">Delivered</option><option value="Cancelled">Cancelled</option>
+                                                </select>
+                                            </td>
+                                            <td className="p-4">
+                                                <button onClick={() => setViewingOrder(order)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-full transition"><Eye size={20}/></button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <PaginationControls page={orderPage} totalPages={orderTotalPages} setPage={setOrderPage} />
                     </div>
                 )}
 
+                {/* COUPONS */}
                 {activeTab === 'coupons' && (
                     <div className="space-y-8">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-md">
@@ -362,26 +433,43 @@ const AdminDashboard = () => {
                         <label htmlFor="stock">In Stock</label>
                     </div>
                     
-                    {/* --- UPDATED: Multiple Image Upload UI --- */}
                     <div>
                         <label className="block text-sm font-bold mb-2">Product Images</label>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition relative cursor-pointer">
                             <input type="file" accept="image/*" multiple onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                             <Upload className="mx-auto text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-500">Click to upload multiple images</p>
+                            <p className="text-sm text-gray-500">Click to upload new images</p>
                         </div>
                         
-                        {/* Image Previews */}
-                        {formData.images && formData.images.length > 0 && (
-                            <div className="grid grid-cols-4 gap-2 mt-4">
-                                {formData.images.map((img, idx) => (
-                                    <div key={idx} className="relative group aspect-square rounded overflow-hidden bg-gray-100 border">
-                                        <img src={img} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
-                                        <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
-                                            <X size={12} />
-                                        </button>
-                                    </div>
-                                ))}
+                        {formData.existingImages.length > 0 && (
+                            <div className="mt-4">
+                                <p className="text-xs font-bold text-gray-500 mb-2">Existing:</p>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {formData.existingImages.map((img, idx) => (
+                                        <div key={idx} className="relative group aspect-square rounded overflow-hidden bg-gray-100 border">
+                                            <img src={img} alt={`Existing ${idx}`} className="w-full h-full object-cover" />
+                                            <button type="button" onClick={() => removeExistingImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {formData.newFiles.length > 0 && (
+                            <div className="mt-4">
+                                <p className="text-xs font-bold text-green-600 mb-2">New Uploads:</p>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {formData.newFiles.map((file, idx) => (
+                                        <div key={idx} className="relative group aspect-square rounded overflow-hidden bg-gray-100 border border-green-200">
+                                            <img src={URL.createObjectURL(file)} alt={`New ${idx}`} className="w-full h-full object-cover" />
+                                            <button type="button" onClick={() => removeNewFile(idx)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -392,7 +480,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* VIEW ORDER MODAL (unchanged) */}
+      {/* VIEW ORDER MODAL */}
       {viewingOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] p-6 overflow-y-auto">
